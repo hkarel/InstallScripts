@@ -1,0 +1,231 @@
+#!/bin/bash
+
+#
+# Сборка минимальной версии Qt-библиотеки для последующей сборки QBS.
+# Перед процессом сборки Qt на ARM системах целесообразно минимизировать
+# Qt-репозиторий, для этого используется скрипт minimal_qt_qbs.
+#
+
+set -u
+
+rebuild=
+print_help=
+branch=5.6
+prefix=/opt/qt/5.6-qbs
+build_modules='qtbase|qtscript|qtxmlpatterns'
+need_modify_mkspecs=no
+minimize_repo=yes
+src_dir=~/Tools/qt5-qbs
+
+compiler_cc=/usr/bin/gcc
+compiler_cxx=/usr/bin/g++
+compiler_ver=''
+compiler_rpath=''
+
+# Определение параметров host-системы
+if [ ! -e $(dirname $0)/os_detect ]; then
+    echo "Error: os_detect script not found."
+    exit 1
+fi
+. $(dirname $0)/os_detect
+# ---
+
+jobs=4
+mem_size=$(free -m | sed '2!d' | sed 's/  */ /g' | cut -d' ' -f2)
+[ "$mem_size" -lt 500 ] && jobs=2
+echo "build jobs ..... $jobs"
+
+gcc_version()
+{
+    local result="undef"
+    if [ $# -eq 1 ]; then
+        local gcc_path=$1
+        if [ -x $gcc_path ]; then
+            result=$(bash -c "$gcc_path --version" | head -n1 | sed -r 's/\(.*\)//' | sed -r 's/ +/ /g' | cut -d' ' -f2)
+        fi
+    fi
+    echo "$result"
+}
+
+display_help()
+{
+cat << EOF
+Usage: ${0##*/} [hrpbm]
+  -h --help      display this help and exit
+  -r --rebuild   full rebuild of project
+  -p --prefix    prefix to install Qt framework
+  -b --branch    Qt branch for build
+  -m --minimize-repo Remove temporary build files after success building [yes/no]
+  Current build parameters:
+    prefix ............. $prefix
+    qt branch .......... $branch
+    compiler version ... $compiler_ver
+    compiler cc ........ $compiler_cc
+    compiler cxx ....... $compiler_cxx
+    compiler rpath ..... $compiler_rpath
+    minimize repo ...... $minimize_repo
+EOF
+}
+
+# Обработка позиционных параметров:
+#    http://wiki.bash-hackers.org/scripting/posparams
+while test -n ${1:-""}
+do
+    case "$1" in
+        -r|--rebuild)
+            rebuild=yes
+            shift
+            ;;
+        -h|--help)
+            print_help=yes
+            shift
+            ;;
+        -p|--prefix)
+            prefix=$2
+            shift 2
+            ;;
+        -b|--branch)
+            branch=$2
+            shift 2
+            ;;
+        -m|--minimize-repo)
+            minimize_repo=$2
+            if [ "$minimize_repo" != "yes" ]; then
+                minimize_repo=no
+            fi
+            shift 2
+            ;;
+        -*)
+            echo "Error: Unknown option: $1" >&2
+            exit 1
+            ;;
+        *)  # No more options
+            break
+            ;;
+    esac
+done
+
+compiler_ver=$(gcc_version $compiler_cc)
+if [ $(echo "$compiler_ver" | sed 's/\.//g') -lt "550" ]; then
+    compiler_ver=5.5.0
+    compiler_cc=/opt/gcc/${compiler_ver}/bin/gcc
+    compiler_cxx=/opt/gcc/${compiler_ver}/bin/g++
+    compiler_rpath=-Wl,-rpath,/opt/gcc/${compiler_ver}/lib64
+    need_modify_mkspecs=yes
+fi
+
+if [ "$print_help" = "yes" ]; then
+    display_help
+    exit 0
+fi
+
+which git > /dev/null 2>&1
+if [ "$?" -ne 0 ]; then
+    echo "Error: Need install the GIT"
+    exit 1
+fi
+
+if [ ! -d $src_dir ]; then
+    echo "Error: Not found directory: $src_dir"
+    exit 1
+fi
+cd $src_dir
+
+if [ ! -d .git ]; then
+    echo "Error: Git repository not exists"
+    exit 1;
+fi
+
+[ -z "$(dpkg -l | grep -P '^ii\s+libsqlite0-dev')" ]    && sudo apt-get install -y libsqlite0-dev
+[ -z "$(dpkg -l | grep -P '^ii\s+zlib1g-dev')" ]        && sudo apt-get install -y zlib1g-dev
+#[ -z "$(dpkg -l | grep -P '^ii\s+libudev-dev')" ]       && sudo apt-get install -y libudev-dev
+#[ -z "$(dpkg -l | grep -P '^ii\s+libxkbcommon-dev')" ]  && sudo apt-get install -y libxkbcommon-dev
+#[ -z "$(dpkg -l | grep -P '^ii\s+libicu-dev')" ]        && sudo apt-get install -y libicu-dev
+
+set -e
+
+if [ "$rebuild" = "yes" ]; then
+    # Полная пересборка
+    git clean -dfx
+    git submodule foreach --recursive git clean -dfx
+
+    git checkout -f
+    git submodule foreach --recursive git checkout -f
+fi
+#git submodule update --init --recursive > /dev/null 2>&1
+git submodule update --init --recursive 
+
+if [ "$need_modify_mkspecs" = "yes" ]; then
+    compiler_cc_=$(echo ${compiler_cc} | sed 's|\/|\\/|g')
+    compiler_cxx_=$(echo ${compiler_cxx} | sed 's|\/|\\/|g')
+    sed -e "/^QMAKE_COMPILER\s*=/ s/=.*$/= ${compiler_cc_}/" \
+        -e "/^QMAKE_CC\s*=/ s/=.*/= ${compiler_cc_}/" \
+        -e "/^QMAKE_CXX\s*=/ s/=.*/= ${compiler_cxx_}/" \
+        -i $src_dir/qtbase/mkspecs/common/g++-base.conf
+
+    echo "QMAKE_LFLAGS += -Wl,-rpath,/opt/gcc/${compiler_ver}/lib64" >> $src_dir/qtbase/mkspecs/common/g++-base.conf
+fi
+
+set +e
+#skip_modules=$(find ./ -maxdepth 1 -type d -name 'qt*' | sed 's|\./||' | grep -v -E $build_modules | xargs -n1 echo '-skip')
+skip_modules=$(find ./ -maxdepth 1 -type d -name 'qt*' | sed 's|\./||' | grep -v -E $build_modules)
+set -e
+
+skip_modules_cmd=
+for m in $skip_modules; do
+    skip_modules_cmd="$skip_modules_cmd -skip $m"
+done
+
+./configure \
+    -verbose \
+    -prefix $prefix \
+    -release \
+    -opensource --enable-confirm-license \
+    -make libs \
+    $skip_modules_cmd \
+    -no-sql-db2 -no-sql-ibase -no-sql-mysql -no-sql-oci -no-sql-odbc -no-sql-psql -no-sql-tds \
+    -no-qml-debug \
+    -no-mtdev \
+    -no-gif -no-libpng -no-libjpeg \
+    -no-freetype \
+    -no-harfbuzz \
+    -no-openssl \
+    -no-libproxy \
+    -no-xinput2 \
+    -no-xcb-xlib \
+    -no-pulseaudio \
+    -no-alsa \
+    -no-gtkstyle \
+    -no-compile-examples \
+    -no-gui \
+    -no-widgets \
+    -no-cups \
+    -no-tslib \
+    -no-fontconfig \
+    -no-dbus \
+    -no-xcb \
+    -no-eglfs \
+    -no-kms \
+    -no-gbm \
+    -no-directfb \
+    -no-linuxfb \
+    -no-mirclient \
+    -no-xcb \
+    -no-opengl \
+    -no-libinput \
+    -no-gstreamer \
+    -no-system-proxies
+
+#exit 0
+
+CC=$compiler_cc \
+CXX=$compiler_cxx \
+make -j${jobs}
+
+sudo rm -rf $prefix
+sudo make install
+
+if [ "$minimize_repo" = "yes" ]; then
+    git clean -dfx
+    git submodule foreach --recursive git clean -dfx
+fi

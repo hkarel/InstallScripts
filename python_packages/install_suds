@@ -1,0 +1,32 @@
+#!/bin/sh
+
+set -e
+
+PYTHON_VERSION=${PYTHON_VERSION:-2.7.9}
+PYTHON_PREFIX=${PYTHON_PREFIX:-"/opt/python/${PYTHON_VERSION}"}
+PYTHON_BIN=${PYTHON_PREFIX}/bin/python
+
+NAME=suds
+VERSION=${VERSION:-0.4}
+PREFIX=${PYTHON_PREFIX}/lib/python2.7/site-packages
+
+if [ -e "${PREFIX}/${NAME}" ]; then
+    echo "${NAME}-${VERSION} is already installed to ${PREFIX}"
+    exit 1
+fi
+
+LOCAL_URL=http://dev.lanbilling.ru/third-party/${NAME}-${VERSION}.tar.gz
+UPSTREAM_URL=https://pypi.python.org/packages/source/s/${NAME}/${NAME}-${VERSION}.tar.gz
+URL=$UPSTREAM_URL
+
+CODE=`curl -s -o /dev/null -w "%{http_code}" ${LOCAL_URL}`
+
+if [ "$CODE" = "200" ]; then
+    URL=$LOCAL_URL
+fi
+
+curl -sSL $URL | tar -f /dev/stdin -C /tmp -xz
+cd /tmp/${NAME}-${VERSION}
+${PYTHON_BIN} setup.py build
+${PYTHON_BIN} setup.py install_lib
+rm -rf /tmp/${NAME}-${VERSION}

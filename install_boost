@@ -1,0 +1,47 @@
+#!/bin/sh
+
+set -e
+
+if [ "$(id -u)" -ne 0 ]; then
+    echo "Error: Script must be running with root privileges"
+    exit 1
+fi
+
+NAME=boost
+VERSION=${VERSION:-1.55.0}
+TARBALL_VERSION=`echo ${VERSION} | sed 's/\./_/g'`
+PREFIX=${PREFIX:-"/opt/${NAME}/${VERSION}"}
+
+if [ -e ${PREFIX} ]; then
+    echo "${NAME}-${VERSION} is already installed to ${PREFIX}"
+    exit 1
+fi
+
+PYTHON_VERSION=${PYTHON_VERSION:-2.7.9}
+PYTHON_PATH=${PYTHON_PATH:-"/opt/python/${PYTHON_VERSION}"}
+
+if [ ! -e "${PYTHON_PATH}/include/python2.7/abstract.h" ]; then
+    echo "Install Python ${PYTHON_VERSION} to ${PYTHON_PATH}"
+    echo "./install_python_${PYTHON_VERSION}"
+    exit 1
+fi
+
+LOCAL_URL=http://dev.lanbilling.ru/third-party/${NAME}-${TARBALL_VERSION}.tar.bz2
+UPSTREAM_URL=http://downloads.sourceforge.net/project/boost/boost/${VERSION}/boost_${TARBALL_VERSION}.tar.bz2
+URL=$UPSTREAM_URL
+
+CODE=`curl -s -o /dev/null -w "%{http_code}" ${LOCAL_URL}`
+
+if [ "$CODE" = "200" ]; then
+    URL=$LOCAL_URL
+fi
+
+curl -SL $URL | tar -f /dev/stdin -C /tmp -xj
+cd /tmp/${NAME}_${TARBALL_VERSION}
+./bootstrap.sh \
+    --prefix=${PREFIX} \
+    --without-icu \
+    --with-libraries=thread,system,date_time,regex,filesystem,iostreams,python,random,chrono,program_options \
+    --with-python=${PYTHON_PATH}/bin/python
+./b2 -j4 --disable-icu cxxflags="-fno-strict-aliasing -fPIC" install
+rm -rf /tmp/${NAME}_${TARBALL_VERSION}

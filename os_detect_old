@@ -1,0 +1,51 @@
+#!/bin/sh
+
+# --- Определение параметров host-системы ---
+os_type=$(uname -o)
+os_arch=i386
+os_name=
+os_ver_major=
+os_ver_minor=
+
+if [ "$os_type" = "GNU/Linux" ]; then
+    if [ -f /etc/redhat-release ]; then
+        ident_file="/etc/redhat-release"
+    elif [ -f /etc/issue ]; then
+        ident_file="/etc/issue"
+    else
+        echo "Unknown linux distribution"
+    fi
+    os_name=$(head -n1 $ident_file | cut -d' ' -f1)
+    if [ -z "$os_name" ]; then
+        echo "Error:  Unknown linux OS name"
+        exit 1
+    fi
+
+    if [ "$os_name" = "Debian" ]; then
+        os_ver_major=$(head -n1 $ident_file | sed -r 's/.* ([6-9])(\.| ).*/\1/')
+        os_ver_minor=0
+    else
+        os_ver=$(head -n1 $ident_file | sed -r 's/.* ([0-9]+)\.([0-9]+).*/\1\.\2/')
+        os_ver_major=$(echo $os_ver | cut -d'.' -f1)
+        os_ver_minor=$(echo $os_ver | cut -d'.' -f2)
+    fi
+
+    os_arch=$(uname -m)
+    if [ "$os_arch" = "x86_64" ]; then
+        os_arch=amd64
+    fi
+
+elif [ "$os_type" = "FreeBSD" ]; then
+    os_name=FreeBSD
+
+    os_ver_major=$(uname -r | cut -d'.' -f1)
+    os_ver_minor=$(uname -r | cut -d'.' -f2 | cut -d'-' -f1)
+
+    os_arch=$(uname -m)
+fi
+
+echo "os_type ........ $os_type"
+echo "os_arch ........ $os_arch"
+echo "os_name ........ $os_name"
+echo "os_ver_major ... $os_ver_major"
+echo "os_ver_minor ... $os_ver_minor"

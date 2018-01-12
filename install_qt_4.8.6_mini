@@ -1,0 +1,109 @@
+#!/bin/sh
+
+# Для того чтобы не удалять директорию сборки $gcc_dir после выполнения
+# инсталляции необходимо выставить первый параметр сценария не равным 0.
+no_remove_dir=${1:-0}
+
+set -u
+
+ver=4.8.6
+distrib_dir=$PWD
+archive=qt-everywhere-opensource-src-${ver}.tar.gz
+src_dir=qt-everywhere-opensource-src-${ver}
+dest_dir=/opt/qt/${ver}-mini
+
+# Определение параметров host-системы
+if [ ! -e $(dirname $0)/os_detect ]; then
+    echo "Error: os_detect script not found."
+    exit 1
+fi
+. $(dirname $0)/os_detect
+# ---
+
+MAKE=make
+[ "$os_type" = "FreeBSD" ] && MAKE=gmake
+
+SUDO=
+if [ "$os_name" = "Ubuntu" ] || [ "$os_name" = "Debian" ]; then
+    [ "$(id -u)" -ne 0 ] && SUDO=sudo
+else
+    if [ "$(id -u)" -ne 0 ]; then
+        echo "Error: Script must be running with root privileges"
+        exit 1
+    fi
+fi
+
+gcc_compiler=gcc
+gxx_compiler=g++
+
+if [ "$os_name" = "CentOS" ] && [ "$os_ver_major" = "5" ] && [ "$os_arch" = "i386" ] ; then
+    gcc_compiler=gcc-4.8.4
+    gxx_compiler=g++-4.8.4
+fi
+
+which $gcc_compiler > /dev/null 2>&1
+if [ "$?" -ne 0 ]; then
+    echo "Error: Need install the $gcc_compiler"
+    exit 1
+fi
+
+which $gxx_compiler > /dev/null 2>&1
+if [ "$?" -ne 0 ]; then
+    echo "Error: Need install the $gxx_compiler"
+    exit 1
+fi
+
+remove_dir()
+{
+    cd $distrib_dir
+    if [ -d $src_dir ]; then
+        echo "Remove directory $src_dir ..."
+        rm -rf "$src_dir"
+    fi
+}
+
+if [ ! -e $archive ]; then
+    url=http://download.qt-project.org/official_releases/qt/4.8/${ver}/${archive}
+    wget -c $url
+fi
+
+set -e
+
+remove_dir
+
+echo "Extract $archive ..."
+tar -xf $archive
+
+cd $src_dir
+
+# Минималистичная конфигурация для сборочных стендов (без графики)
+CC=$gcc_compiler CXX=$gxx_compiler \
+./configure \
+    -verbose -prefix ${dest_dir} \
+    -release -opensource --enable-confirm-license \
+    -no-pch \
+    -nomake tools -nomake examples -nomake demos -nomake docs -nomake translations \
+    -optimized-qmake \
+    -no-stl -no-qt3support -no-webkit -no-nis -no-cups -no-multimedia \
+    -no-audio-backend -no-phonon -no-phonon-backend \
+    -no-svg -no-gif -no-libtiff -no-libpng -no-libmng -no-libjpeg \
+    -no-dbus -no-iconv -no-openssl \
+    -no-opengl -no-openvg -no-xvideo \
+    -no-sql-db2 -no-sql-ibase -no-sql-mysql -no-sql-oci -no-sql-odbc -no-sql-psql -no-sql-sqlite_symbian -no-sql-symsql -no-sql-tds \
+    -no-declarative -no-declarative-debug \
+    -no-gui \
+    -no-gtkstyle -no-sm -no-xshape -no-xsync -no-xinerama -no-xcursor -no-xfixes -no-xrandr -no-xrender -no-mitshm \
+    -no-fontconfig -no-xinput -no-xkb -no-glib \
+
+$MAKE -j4
+
+[ -d $dest_dir ] && $SUDO rm -rf $dest_dir
+
+cd $distrib_dir/$src_dir
+$SUDO $MAKE install
+
+echo "Check qmake version ... "
+${dest_dir}/bin/qmake --version
+
+[ "$no_remove_dir" -eq 0 ] && remove_dir
+

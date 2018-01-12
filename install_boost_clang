@@ -1,0 +1,30 @@
+#!/bin/sh
+
+opt=/opt/lbcore.boost.v1
+
+local_url=http://192.168.11.115/files/boost_1_49_0.tar.bz2
+global_url=http://downloads.sourceforge.net/project/boost/boost/1.49.0/boost_1_49_0.tar.bz2
+wget -c $local_url || wget -c $global_url
+tar -jxf boost_1_49_0.tar.bz2
+cd ./boost_1_49_0/
+echo "Hello" > libs/regex/build/has_icu_test.cpp
+
+./bootstrap.sh --without-icu
+#./b2
+./b2 toolset=clang
+
+mkdir -p $opt/include/boost
+
+#GCCVER=`gcc -dumpversion`
+CLANGVER=`clang --version | awk '{print $3; exit}'`
+cp -ax boost/* $opt/include/boost/
+mkdir -p $opt/lib/boost.bin/
+#cp -ax bin.v2/libs/* /opt/lib/boost.bin/
+
+for x in `ls bin.v2/libs`; do
+  echo $x
+  mkdir -p $opt/lib/boost.bin/$x
+  #cp -ax ./bin.v2/libs/$x/build/gcc-$GCCVER/release/* $opt/lib/boost.bin/$x/
+  cp -ax ./bin.v2/libs/$x/build/clang-linux-$CLANGVER/release/* $opt/lib/boost.bin/$x/
+
+done

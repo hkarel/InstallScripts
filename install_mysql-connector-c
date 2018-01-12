@@ -1,0 +1,38 @@
+#!/bin/sh
+
+set -e
+
+NAME=mysql-connector-c
+VERSION=${VERSION:-6.0.2}
+PREFIX=${PREFIX:-"/opt/${NAME}/${VERSION}"}
+
+if [ -e ${PREFIX} ]; then
+    echo "${NAME}-${VERSION} is already installed to ${PREFIX}"
+    exit 1
+fi
+
+LOCAL_URL=http://dev.lanbilling.ru/third-party/${NAME}-${VERSION}.tar.gz
+UPSTREAM_URL=https://dev.mysql.com/get/Downloads/Connector-C/mysql-connector-c-${VERSION}.tar.gz
+URL=$UPSTREAM_URL
+
+CODE=`curl -s -o /dev/null -w "%{http_code}" ${LOCAL_URL}`
+
+if [ "$CODE" = "200" ]; then
+    URL=$LOCAL_URL
+fi
+
+curl -sSL $URL | tar -f /dev/stdin -C /tmp -xz
+cd /tmp/${NAME}-${VERSION}
+cmake \
+    -DCMAKE_INSTALL_PREFIX=${PREFIX} \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DCMAKE_C_COMPILER=gcc \
+    -DCMAKE_CXX_COMPILER=g++ .
+make
+make install
+rm -rf ${PREFIX}/bin
+rm -rf ${PREFIX}/COPYING
+rm -rf ${PREFIX}/EXCEPTIONS-CLIENT
+rm -rf ${PREFIX}/README
+rm -rf ${PREFIX}/lib/libmysql.*
+rm -rf /tmp/${NAME}-${VERSION}

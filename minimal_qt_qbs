@@ -1,0 +1,63 @@
+#!/bin/bash
+
+#
+# Скрипт создает минимальный репозиторий Qt-библиотеки необходимый для сборки
+# QBS. После выполнения данного скрипта необходимо выполнить сбору и установку
+# минимального варианта Qt-библиотеки при помощи скрипта install_qt_qbs.
+# Следующим шагом можно выполнять сборку QBS при помощи скрипта install_qbs.
+#
+
+set -u
+
+branch=5.6
+src_dir=~/Tools/qt5-qbs
+
+which git > /dev/null 2>&1
+if [ "$?" -ne 0 ]; then
+    echo "Error: Need install the GIT"
+    exit 1
+fi
+
+mkdir -p $src_dir
+cd $src_dir
+
+set -e
+
+if [ ! -d .git ]; then
+    rm -rf ./*
+    git clone https://github.com/qt/qt5.git ./
+    git checkout --track origin/$branch
+fi
+
+if [ ! -d .git ]; then
+    echo "Error: Git repository not exists"
+    exit 1;
+fi
+
+git checkout -f
+git clean -dfx
+git fetch --all
+git pull -r
+
+build_modules='qtbase|qtscript|qtxmlpatterns'
+skip_modules=$(find ./ -maxdepth 1 -type d -name 'qt*' | sed 's|\./||' | grep -v -E $build_modules)
+#skip_modules=$(find ./ -maxdepth 1 -type d -name 'qt*' | sed 's|\./||' | grep -v -E $build_modules | xargs -n1 echo '-skip')
+#echo "1${skip_modules}1"
+#exit
+
+if [ -n "$skip_modules" ]; then
+    git rm --cached $skip_modules
+    for m in $skip_modules; do
+        git config -f .gitmodules --remove-section submodule.$m
+    done
+    rm -rf $skip_modules
+    sed '/qttools/d' -i .gitmodules
+    git commit -a -m "Was abandoned submodules necessary for building QBS"
+    git submodule init
+    git submodule foreach --recursive git submodule init
+
+else
+    git submodule foreach --recursive git checkout -f
+    git submodule foreach --recursive git clean -dfx
+fi
+git submodule update --init --recursive

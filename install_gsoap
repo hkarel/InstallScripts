@@ -1,0 +1,117 @@
+#!/bin/sh
+
+# Сценарий собирает и устанавливает утилиту gsoap следующих версий: 2.7.12, 2.8.4
+
+#set -e
+
+git_dir=/tmp/gsoap
+MAKE=make
+ver=
+
+if [ "$(id -u)" -ne 0 ]; then
+    echo "Error: Script must be running with root privileges"
+    exit 1
+fi
+
+os_type=$(uname -o)
+if [ "$os_type" = "GNU/Linux" ]; then
+    if [ -f /etc/redhat-release ]; then
+        ident_file="/etc/redhat-release"
+    elif [ -f /etc/issue ]; then
+        ident_file="/etc/issue"
+    else
+        echo "Unknown linux distribution"
+    fi
+    os_name=$(head -n1 $ident_file | cut -d' ' -f1)
+    if [ $os_name = "Ubuntu" ] || [ $os_name = "Debian" ]; then
+        apt-get install -y automake autoconf bison flex libssl-dev zlib1g-dev
+
+    elif [ $os_name = "CentOS" ]; then
+        yum install -y automake autoconf bison flex openssl-devel zlib-devel
+    fi
+
+elif [ "$os_type" = "FreeBSD" ]; then
+    MAKE=gmake
+fi
+
+gsoap_install()
+{
+    local ver=$1
+
+    mkdir -p /opt/gsoap/${ver}/bin
+    cp -v ./gsoap/wsdl/wsdl2h   /opt/gsoap/${ver}/bin
+    cp -v ./gsoap/src/soapcpp2  /opt/gsoap/${ver}/bin
+
+    strip --strip-all /opt/gsoap/${ver}/bin/wsdl2h
+    strip --strip-all /opt/gsoap/${ver}/bin/soapcpp2
+
+    mkdir -p /opt/gsoap/${ver}/import
+    cp -v ./gsoap/import/* /opt/gsoap/${ver}/import
+
+    cp -v ./gsoap/stdsoap2.*  /opt/gsoap/${ver}
+
+    [ -e /usr/bin/soapcpp2-${ver} ] && rm -f /usr/bin/soapcpp2-${ver}
+    ln -svf /opt/gsoap/${ver}/bin/soapcpp2   /usr/bin/soapcpp2-${ver}
+
+    [ -e /usr/bin/wsdl2h-${ver} ] && rm -f /usr/bin/wsdl2h-${ver}
+    ln -svf /opt/gsoap/${ver}/bin/wsdl2h   /usr/bin/wsdl2h-${ver}
+
+    #mkdir -p /usr/include/gsoap-${ver}
+    [ -d /usr/include/gsoap-${ver} ] && rm -rf /usr/include/gsoap-${ver}
+    ln -svf /opt/gsoap/${ver}  /usr/include/gsoap-${ver}
+}
+
+
+mkdir -p $git_dir
+cd $git_dir
+
+git status > /dev/null 2>&1
+if [ "$?" -ne 0 ]; then
+    rm -rf ./*
+    #git clone git@git.lanbilling.ru:third-party/gsoap.git ./
+    git clone https://git.lanbilling.ru/third-party/gsoap.git ./
+fi
+
+#--- Собираем 2.7.12 ---
+ver=2.7.12
+rm -rf /opt/gsoap/$ver
+git reset --hard
+git clean -qfdx
+git checkout master >/dev/null 2>&1
+git pull -r
+
+./configure
+
+sed -e "s/aclocal-1.6/aclocal/g" -e "s/automake-1.6/automake/g" Makefile > Makefile_tmp
+mv -f Makefile_tmp Makefile
+
+# Не использовать ключ -j, собирать в один поток.
+$MAKE
+
+gsoap_install $ver
+
+
+#--- Собираем 2.8.4 ---
+ver=2.8.4
+rm -rf /opt/gsoap/$ver
+git reset --hard
+git clean -qfdx
+
+git branch | grep -q "$ver"
+if [ "$?" -eq 0 ]; then
+    git checkout $ver
+else
+    git checkout --track origin/$ver
+fi
+
+git pull -r
+
+./configure
+
+sed -e "s/aclocal-1.10/aclocal/g" -e "s/automake-1.10/automake/g" Makefile > Makefile_tmp
+mv -f Makefile_tmp Makefile
+
+# Не использовать ключ -j, собирать в один поток.
+$MAKE
+
+gsoap_install $ver

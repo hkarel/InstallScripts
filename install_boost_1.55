@@ -1,0 +1,139 @@
+#!/bin/sh
+
+set -e
+
+gcc_ver=4.8.4
+gcc_dir=/opt/gcc/${gcc_ver}
+
+py_ver=2.7.9
+py_dir=/opt/python/${py_ver}
+
+ver=55
+compile=./b2
+compile_args="--disable-icu cxxflags=-fPIC -d2 --toolset=gcc-${gcc_ver}"
+boost_arch=boost_1_${ver}_0.tar.bz2
+boost_dir=boost_1_${ver}_0
+dest_dir=/opt/boost/1.${ver}.0
+dest_dir_include=${dest_dir}/include/boost
+dest_dir_lib=${dest_dir}/lib
+dest_dir_src=${dest_dir}/src
+
+
+if [ "$(id -u)" -ne 0 ]; then
+    echo "Error: Script must be running with root privileges"
+    exit 1
+fi
+
+debug_info=0
+read -r -p "Build with debug info? [y/N] " RESPONSE; RESPONSE=${RESPONSE:-'N'}
+#echo $RESPONSE
+if [ "$RESPONSE" = "y" ] || [ "$RESPONSE" = "Y" ]; then
+    #echo $RESPONSE
+    echo "'Boost' will be builded with the debug information"
+    debug_info=1
+fi
+
+os_type=$(uname -o)
+if [ "$os_type" = "GNU/Linux" ]; then
+    if [ -f /etc/redhat-release ]; then
+        ident_file="/etc/redhat-release"
+    elif [ -f /etc/issue ]; then
+        ident_file="/etc/issue"
+    else
+        echo "Unknown linux distribution"
+    fi
+    os_name=$(head -n1 $ident_file | cut -d' ' -f1)
+    if [ "$os_name" = "Ubuntu" ] || [ "$os_name" = "Debian" ]; then
+        apt-get install -y libbz2-dev
+
+    elif [ "$os_name" = "CentOS" ]; then
+        yum install -y bzip2-devel
+    fi
+fi
+
+if [ ! -e "${py_dir}/include/python2.7/abstract.h" ]; then
+    ./install_python_${py_ver}
+fi
+
+if [ -d $boost_dir ]; then
+    echo "Remove directory $boost_dir ..."
+    rm -rf $boost_dir
+fi
+
+if [ ! -e $boost_arch ]; then
+    local_url=http://dev.lanbilling.ru/files/${boost_arch}
+    global_url=http://downloads.sourceforge.net/project/boost/boost/1.${ver}.0/${boost_arch}
+    wget -c $local_url || wget -c $global_url
+fi
+
+echo "Extract $boost_arch ..."
+tar -xf $boost_arch
+
+cd $boost_dir
+
+# Регистрируем свой gcc toolset
+user_config_jam=tools/build/v2/user-config.jam
+echo "using gcc : ${gcc_ver} : ${gcc_dir}/bin/g++ ;" >> $user_config_jam
+
+./bootstrap.sh \
+    --prefix=$dest_dir \
+    --without-icu \
+    --without-libraries=coroutine,graph,graph_parallel,locale,log,math,mpi,test,wave \
+    --with-python=${py_dir}/bin/python
+
+    #--with-toolset=gcc \
+    #--toolset-root=${gcc_dir}
+    #--with-python-version=2.7
+    #--with-toolset='gcc'
+
+#--without-libraries=coroutine,graph,graph_parallel,locale,log,math,mpi,random,test,wave \
+#./bootstrap.sh --without-icu --with-libraries=regex
+
+if [ "$debug_info" -ne 0 ]; then
+    compile_args="$compile_args variant=debug"
+fi
+
+$compile $compile_args
+#--disable-icu variant=debug
+
+[ -e $dest_dir ] && rm -rf $dest_dir
+
+mkdir -p $dest_dir_include
+mkdir -p $dest_dir_lib
+mkdir -p $dest_dir_src
+
+
+echo "Copying headers ..."
+cp -a boost/*      $dest_dir_include
+
+echo "Copying libs ..."
+cp -a stage/lib/*  $dest_dir_lib
+
+echo "Copying source codes ..."
+cp -a libs         $dest_dir_src
+
+echo "Remove unnecessary source files ..."
+res=$(find $dest_dir_src -type d -and \( -name 'doc' -or -name 'test' -or -name 'example' -or -name 'examples' \) )
+for f in $res; do
+    echo $f
+    [ -d $f ] && rm -rf $f
+done
+
+res=$(find $dest_dir_src -type f -and \( -name '*.html' -or -name '*.htm' -or -name '*.vcproj' \) )
+for f in $res; do
+    echo $f
+    [ -e $f ] && rm -f $f
+done
+#---
+
+#GCCVER=$(gcc -dumpversion)
+
+cd ..
+if [ -d $boost_dir ]; then
+    echo "Remove directory $boost_dir ..."
+    rm -rf "$boost_dir"
+fi
+
+if [ "$debug_info" -ne 0 ]; then
+    echo \!\!\! Add to ~/.gdbinit file the next string: \'directory ${dest_dir_src}/\'
+fi

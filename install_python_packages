@@ -1,0 +1,15 @@
+#!/bin/sh
+
+REALPATH="readlink -f"
+if [ -e /bin/realpath ]; then
+    REALPATH="/bin/realpath"
+fi
+INSTALL_PATH=$($REALPATH $(dirname $0))
+
+PYTHON_VERSION=${PYTHON_VERSION:-2.7.9}
+PYTHON_PATH=${PYTHON_PATH:-"/opt/python/${PYTHON_VERSION}"}
+
+$INSTALL_PATH/python_packages/install_setuptools
+$INSTALL_PATH/python_packages/install_simplejson
+$INSTALL_PATH/python_packages/install_suds
+$INSTALL_PATH/python_packages/install_yapsy

@@ -1,0 +1,56 @@
+#!/bin/sh
+
+set -e
+
+NAME=Python
+MAIN_VERSION=${MAIN_VERSION:-2.7}
+PATCH_VERSION=${PATCH_VERSION:-9}
+VERSION=${MAIN_VERSION}.${PATCH_VERSION}
+PREFIX=${PREFIX:-"/opt/python/${VERSION}"}
+REALPATH="readlink -f"
+if [ -e /bin/realpath ]; then
+    REALPATH="/bin/realpath"
+fi
+PATCHES_PATH=$($REALPATH $(dirname $0))/patches
+
+if [ -e ${PREFIX} ]; then
+    echo "${NAME}-${VERSION} is already installed to ${PREFIX}"
+    exit 1
+fi
+
+LOCAL_URL=http://dev.lanbilling.ru/third-party/${NAME}-${VERSION}.tgz
+UPSTREAM_URL=https://www.python.org/ftp/python/${VERSION}/${NAME}-${VERSION}.tgz
+URL=$UPSTREAM_URL
+
+CODE=`curl -s -o /dev/null -w "%{http_code}" ${LOCAL_URL}`
+
+if [ "$CODE" = "200" ]; then
+    URL=$LOCAL_URL
+fi
+
+curl -sSL $URL | tar -f /dev/stdin -C /tmp -xz
+cd /tmp/${NAME}-${VERSION}
+if [ `uname` = 'FreeBSD' ]; then
+    MAKE=gmake
+    patch -p0 < ${PATCHES_PATH}/python_2.7.9_freebsd.patch
+    cp -r Lib/plat-freebsd8 Lib/plat-freebsd9
+    cp -r Lib/plat-freebsd8 Lib/plat-freebsd10
+fi
+sed -i.bak "s/SOVERSION=1.0/SOVERSION=${PATCH_VERSION}/" ./configure
+./configure \
+    --prefix=${PREFIX} \
+    --enable-unicode=ucs4 \
+    --enable-shared \
+    --with-threads \
+    LDFLAGS='-Wl,-z,origin -Wl,-rpath,\$$ORIGIN:\$$ORIGIN/../lib:\$$ORIGIN/../../lib:\$$ORIGIN/../..:\$$ORIGIN/../../..'
+make -j4
+make install
+# Блокировка дублирующихся define-параметров
+sed -i.bak -e "s:^#define _POSIX_C_SOURCE:// #define _POSIX_C_SOURCE:" \
+    -e "s:^#define _XOPEN_SOURCE:// #define _XOPEN_SOURCE:" \
+    ${PREFIX}/include/python${MAIN_VERSION}/pyconfig.h
+rm -f ${PREFIX}/include/python${MAIN_VERSION}/pyconfig.h.bak
+# Удаление отладочной информации
+strip --strip-debug ${PREFIX}/lib/libpython${MAIN_VERSION}.so.${PATCH_VERSION}
+find ${PREFIX}/lib/python2.7 -name '*.so' -type f -exec strip --strip-debug {} \;
+rm -rf /tmp/${NAME}-${VERSION}
