@@ -139,7 +139,7 @@ which $qt_path/bin/qmake > /dev/null 2>&1
 [ "$?" -eq 0 ] && qmake=$qt_path/bin/qmake
 
 compiler_ver=$(gcc_version $compiler)
-if [ $(echo "$compiler_ver" | sed 's/\.//g') -lt "550" ]; then
+if [ $(echo "$compiler_ver" | sed 's/\.//g') -lt "540" ]; then
     compiler=/opt/gcc/5.5.0/bin/g++
     compiler_rpath=-Wl,-rpath,/opt/gcc/5.5.0/lib64
 fi

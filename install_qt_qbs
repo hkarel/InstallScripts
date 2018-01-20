@@ -106,7 +106,7 @@ do
 done
 
 compiler_ver=$(gcc_version $compiler_cc)
-if [ $(echo "$compiler_ver" | sed 's/\.//g') -lt "550" ]; then
+if [ $(echo "$compiler_ver" | sed 's/\.//g') -lt "540" ]; then
     compiler_ver=5.5.0
     compiler_cc=/opt/gcc/${compiler_ver}/bin/gcc
     compiler_cxx=/opt/gcc/${compiler_ver}/bin/g++
