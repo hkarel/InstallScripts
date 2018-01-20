@@ -23,7 +23,7 @@ fi
 jobs=4
 mem_size=$(free -m | sed '2!d' | sed 's/  */ /g' | cut -d' ' -f2)
 [ "$mem_size" -lt 500 ] && jobs=2
-echo "build jobs ..... $jobs"
+echo "build jobs: $jobs"
 
 free_bsd_clang=no
 if [ "$os_type" = "FreeBSD" ] && [ "$os_ver_major" = "10" ]; then
