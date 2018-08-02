@@ -10,8 +10,8 @@ set -u
 
 rebuild=
 print_help=
-branch=5.6
-prefix=/opt/qt/5.6-qbs
+branch=5.9
+prefix=/opt/qt/5.9-qbs
 build_modules='qtbase|qtscript|qtxmlpatterns'
 need_modify_mkspecs=no
 minimize_repo=yes
@@ -180,22 +180,19 @@ done
     -verbose \
     -prefix $prefix \
     -release \
-    -opensource --enable-confirm-license \
+    -opensource -confirm-license \
     -make libs \
     $skip_modules_cmd \
     -no-sql-db2 -no-sql-ibase -no-sql-mysql -no-sql-oci -no-sql-odbc -no-sql-psql -no-sql-tds \
     -no-qml-debug \
     -no-mtdev \
-    -no-gif -no-libpng -no-libjpeg \
+    -no-gif -no-libpng -no-libjpeg -no-ico \
     -no-freetype \
     -no-harfbuzz \
     -no-openssl \
     -no-libproxy \
     -no-xinput2 \
     -no-xcb-xlib \
-    -no-pulseaudio \
-    -no-alsa \
-    -no-gtkstyle \
     -no-compile-examples \
     -no-gui \
     -no-widgets \
@@ -213,10 +210,17 @@ done
     -no-xcb \
     -no-opengl \
     -no-libinput \
-    -no-gstreamer \
     -no-system-proxies
 
 #exit 0
+
+response=
+read -r -p "Continue? [Y/n]: " response;
+response=$(echo "$response" | tr -d '[:space:]')
+response=${response:-'Y'}
+if [[ ! "$response" =~ ^(y|Y)$ ]]; then
+    exit 0
+fi
 
 CC=$compiler_cc \
 CXX=$compiler_cxx \

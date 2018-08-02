@@ -9,7 +9,7 @@
 
 set -u
 
-branch=5.6
+branch=5.9
 src_dir=~/Tools/qt5-qbs
 
 which git > /dev/null 2>&1
@@ -26,7 +26,6 @@ set -e
 if [ ! -d .git ]; then
     rm -rf ./*
     git clone https://github.com/qt/qt5.git ./
-    git checkout --track origin/$branch
 fi
 
 if [ ! -d .git ]; then
@@ -37,7 +36,12 @@ fi
 git checkout -f
 git clean -dfx
 git fetch --all
-git pull -r
+
+set +e
+git checkout dev
+git branch -D $branch
+set -e
+git checkout --track origin/$branch
 
 build_modules='qtbase|qtscript|qtxmlpatterns'
 skip_modules=$(find ./ -maxdepth 1 -type d -name 'qt*' | sed 's|\./||' | grep -v -E $build_modules)
@@ -52,7 +56,7 @@ if [ -n "$skip_modules" ]; then
     done
     rm -rf $skip_modules
     sed '/qttools/d' -i .gitmodules
-    git commit -a -m "Was abandoned submodules necessary for building QBS"
+    git commit -a -m "Were left submodules necessary for building of QBS"
     git submodule init
     git submodule foreach --recursive git submodule init
 
