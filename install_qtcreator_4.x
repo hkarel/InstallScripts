@@ -6,7 +6,7 @@ rebuild=
 print_help=
 install=
 qtcreator_dir=/opt/qtcreator
-qtcreator_ver=4.5
+qtcreator_ver=4.7
 qbs_profile=qtc
 
 display_help()
