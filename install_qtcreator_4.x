@@ -6,7 +6,7 @@ rebuild=
 print_help=
 install=
 qtcreator_dir=/opt/qtcreator
-qtcreator_ver=4.7
+qtcreator_ver=4.8
 qbs_profile=qtc
 
 display_help()
@@ -183,7 +183,7 @@ if [ "$install" = "yes" ]; then
     if [ "$gxx_compiler" != "$(which g++)" ]; then
         libstdc_path=$(dirname $(realpath $($gxx_compiler --print-file-name=libstdc++.so.6)))
         qtcreator_run="$qtcreator_dir/$qtcreator_ver/bin/qtcreator.sh"
-        sudo sed -i.bak -e "/LD_LIBRARY_PATH=.*/a LD_LIBRARY_PATH=${libstdc_path}:\$LD_LIBRARY_PATH" $qtcreator_run
+        sudo sed -i.bak -e "/^LD_LIBRARY_PATH=.*/a LD_LIBRARY_PATH=${libstdc_path}:\$LD_LIBRARY_PATH" $qtcreator_run
     fi
     echo "Installation successfully completed"
 fi
