@@ -14,7 +14,7 @@ if [ ! -e /etc/os-release ]; then
     exit 1
 fi
 
-get_param()
+function get_param()
 {
     ret=$(echo $1 | sed -r 's/.*=(.*)/\1/')
     ret=$(echo $ret | sed 's/[ "]//g')
