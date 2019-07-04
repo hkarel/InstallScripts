@@ -231,5 +231,5 @@ sudo make install
 
 if [ "$minimize_repo" = "yes" ]; then
     git clean -dfx
-    git submodule foreach --recursive git clean -dfx
+    git submodule foreach --recursive "git clean -dfx"
 fi

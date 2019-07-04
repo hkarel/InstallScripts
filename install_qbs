@@ -8,7 +8,7 @@ qt_path=/opt/qt/5.9-qbs
 qmake=
 config_qbs=
 print_help=
-branch_qbs=1.12
+branch_qbs=1.13
 compiler=/usr/bin/g++
 compiler_rpath=
 
@@ -156,7 +156,7 @@ if [ "$print_help" = "yes" ]; then
 fi
 
 SUDO=
-if [ "$os_name" = "Ubuntu" ] || [ "$os_name" = "Debian" ]; then
+if [ "$os_name" = "Ubuntu" ] || [ "$os_name" = "Debian" ] || [ "$os_id" = "neon" ]; then
     [ "$(id -u)" -ne 0 ] && SUDO=sudo
 else
     if [ "$(id -u)" -ne 0 ]; then
