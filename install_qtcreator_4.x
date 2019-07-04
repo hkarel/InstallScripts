@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -u
 
@@ -6,13 +6,21 @@ rebuild=
 print_help=
 install=
 qtcreator_dir=/opt/qtcreator
-qtcreator_ver=4.8
+qtcreator_ver=4.9
 qbs_profile=qtc
 
-display_help()
+# Определение параметров host-системы
+if [ ! -e $(dirname $0)/os_detect ]; then
+    echo "Error: os_detect script not found."
+    exit 1
+fi
+. $(dirname $0)/os_detect
+# ---
+
+function display_help()
 {
 cat << EOF
-Usage: ${0##*/} [hirvq]
+Usage: ${0##*/}
   -h --help      display this help and exit
   -i --install   install
   -r --rebuild   full rebuild of project
@@ -77,12 +85,12 @@ fi
 # . $(dirname $0)/os_detect
 # # ---
 
-qbs_param()
+function qbs_param()
 {
     qbs config $1 | cut -d' ' -f2 | sed 's/\"//g'
 }
 
-strip_debug_info()
+function strip_debug_info()
 {
     if [ ! -L $1 ]; then
         res=$(file $1 | grep -E 'LSB +shared object')
@@ -106,9 +114,16 @@ if [ "$?" -ne 0 ]; then
     exit 1
 fi
 
-if [ -z "$(dpkg -l | grep -P '^ii\s+realpath')" ]; then
-    echo "Need install 'realpath' utility"
-    sudo apt-get install -y realpath
+if [ ! -e /usr/bin/realpath ]; then
+    if [ -z "$(dpkg -l | grep -P '^ii\s+realpath')" ]; then
+        echo "Need install 'realpath' utility"
+        sudo apt-get install -y realpath
+    fi
+fi
+
+if [ -z "$(dpkg -l | grep -P '^ii\s+libdw-dev')" ]; then
+    echo "Need install 'libdw-dev' package"
+    sudo apt-get install -y libdw-dev
 fi
 
 qbs_gxx_profile=$(qbs_param profiles.$qbs_profile.baseProfile)
@@ -123,6 +138,13 @@ if [ ! -x $gxx_compiler ]; then
     echo "Error: Compiler not found: $gxx_compiler"
     exit 1
 fi
+
+qt_lib_path=$(qbs_param profiles.$qbs_profile.moduleProviders.Qt.qmakeFilePaths)
+[ -n "$qt_lib_path" ] && qt_lib_path="${qt_lib_path%%/bin*}"
+#echo $qt_lib_path
+#exit 0
+
+inst_dir=$(realpath $(dirname $0))
 
 src_dir=~/Tools/qtcreator
 if [ ! -d $src_dir ]; then
@@ -143,7 +165,7 @@ set -e
 if [ "$rebuild" = "yes" ]; then
     # Полная пересборка
     git clean -dfx
-    git submodule foreach --recursive git clean -dfx
+    git submodule foreach --recursive "git clean -dfx"
 fi
 git submodule update --init --recursive
 
@@ -155,6 +177,7 @@ $QBS build \
     --build-directory ./build \
     --command-echo-mode command-line \
     qbs.buildVariant:release \
+    qbs.installPrefix:"" \
     profile:$qbs_profile
 
 if [ "$install" = "yes" ]; then
@@ -179,6 +202,13 @@ if [ "$install" = "yes" ]; then
         strip_debug_info $f
     done
     set -e
+    
+    if [ -n "$qt_lib_path" ]; then
+        sudo cp $inst_dir/qtcreator-qt.conf $qtcreator_dir/$qtcreator_ver/bin/qt.conf
+        sudo ln -s $qt_lib_path $qtcreator_dir/$qtcreator_ver/lib/Qt
+        #sudo sed -e "s/^Prefix=.*/Prefix=${qt_lib_path}/" \
+        #         -i $qtcreator_dir/$qtcreator_ver/bin/qt.conf
+    fi
 
     if [ "$gxx_compiler" != "$(which g++)" ]; then
         libstdc_path=$(dirname $(realpath $($gxx_compiler --print-file-name=libstdc++.so.6)))
