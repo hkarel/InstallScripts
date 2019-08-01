@@ -8,7 +8,7 @@ qt_path=/opt/qt/5.9-qbs
 qmake=
 config_qbs=
 print_help=
-branch_qbs=1.13
+branch_qbs=1.14
 compiler=/usr/bin/g++
 compiler_rpath=
 
@@ -266,8 +266,15 @@ git branch -D $branch_qbs
 set -e
 git checkout --track origin/$branch_qbs
 
+# Исключаем тесты из сборки
 sed -i '/tests/d' qbs.pro
+
+# Исключаем из сборки графический конфигуратор, нам нужна только консольная часть
 sed -i '/config-ui/d' src/app/app.pro
+
+# Понижаем требования к Qt до версии 5.9.5
+sed -i 's/(5, 11, 0)/(5, 9, 5)/' qbs.pro
+sed -i 's/Qt 5.11.0/Qt 5.9.5/' qbs.pro
 
 if [ "$os_type" = "FreeBSD" ]; then
     $qmake -r \
