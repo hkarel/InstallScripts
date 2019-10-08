@@ -6,7 +6,7 @@ rebuild=
 print_help=
 install=
 qtcreator_dir=/opt/qtcreator
-qtcreator_ver=4.9
+qtcreator_ver=4.7
 qbs_profile=qtc
 
 # Определение параметров host-системы
@@ -215,5 +215,17 @@ if [ "$install" = "yes" ]; then
         qtcreator_run="$qtcreator_dir/$qtcreator_ver/bin/qtcreator.sh"
         sudo sed -i.bak -e "/^LD_LIBRARY_PATH=.*/a LD_LIBRARY_PATH=${libstdc_path}:\$LD_LIBRARY_PATH" $qtcreator_run
     fi
+
+    # Удаляем строку: exec "$bindir/qtcreator" ${1+"$@"}
+    sudo sed -i.bak -e '/exec "$bindir\/qtcreator"/d' $qtcreator_run
+
+    # Не используем QT_SCALE_FACTOR, сильно коробит интерфейс
+    #sudo sh -c "#echo 'export QT_SCALE_FACTOR=1.015'  >> $qtcreator_run"
+
+    sudo sh -c "echo 'export QTC_MENU_FONT_SIZE=10.1' >> $qtcreator_run"
+
+    # Добавляем строку: exec "$bindir/qtcreator" ${1+"$@"}
+    sudo sh -c "echo 'exec \"\$bindir/qtcreator\" \${1+\"\$@\"}' >> $qtcreator_run"
+
     echo "Installation successfully completed"
 fi
