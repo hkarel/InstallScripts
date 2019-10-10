@@ -2,7 +2,7 @@
 
 set -u
 
-ver=9.2.0
+ver=8.3.0
 not_remove_dir=
 print_help=
 
