@@ -30,9 +30,10 @@ fi
 . $(dirname $0)/os_detect
 # ---
 
-jobs=4
+jobs=$(nproc)
 mem_size=$(free -m | sed '2!d' | sed 's/  */ /g' | cut -d' ' -f2)
-[ "$mem_size" -lt 500 ] && jobs=2
+[ "$mem_size" -lt 2100 ] && jobs=3
+[ "$mem_size" -lt 510  ] && jobs=2
 echo "build jobs: $jobs"
 
 gcc_version()
