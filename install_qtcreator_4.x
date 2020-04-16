@@ -5,8 +5,10 @@ set -u
 rebuild=
 print_help=
 install=
+symlink_python_remove=
+
 qtcreator_dir=/opt/qtcreator
-qtcreator_ver=4.7
+qtcreator_ver=4.11
 qbs_profile=qtc
 
 # Определение параметров host-системы
@@ -126,6 +128,13 @@ if [ -z "$(dpkg -l | grep -P '^ii\s+libdw-dev')" ]; then
     sudo apt-get install -y libdw-dev
 fi
 
+if [ "$os_id" = "ubuntu" -a "$os_ver" \> "19.04" ]; then
+    if [ -z "$(dpkg -l | grep -P '^ii\s+libgl1-mesa-dev')" ]; then
+        echo "Need install 'libgl1-mesa-dev' package"
+        sudo apt-get install -y libgl1-mesa-dev
+    fi
+fi
+
 qbs_gxx_profile=$(qbs_param profiles.$qbs_profile.baseProfile)
 if [ -z $qbs_gxx_profile ]; then
     echo "Error: Qbs compiler profile not found"
@@ -156,6 +165,14 @@ cd $src_dir
 if [ ! -d .git ]; then
     echo "Error: Git repository not exists"
     exit 1;
+fi
+
+if [ "$os_id" = "ubuntu" -a "$os_ver" \> "19.04" ]; then
+    if [ ! -e /usr/bin/python ]; then
+        symlink_python_remove=yes
+        echo "Need create symlink /usr/bin/python3 -> /usr/bin/python"
+        sudo ln -s /usr/bin/python3 /usr/bin/python
+    fi
 fi
 
 QBS=$(which qbs)
@@ -210,19 +227,28 @@ if [ "$install" = "yes" ]; then
         #         -i $qtcreator_dir/$qtcreator_ver/bin/qt.conf
     fi
 
+    qtcreator_run="$qtcreator_dir/$qtcreator_ver/bin/qtcreator.sh"
+
     if [ "$gxx_compiler" != "$(which g++)" ]; then
         libstdc_path=$(dirname $(realpath $($gxx_compiler --print-file-name=libstdc++.so.6)))
-        qtcreator_run="$qtcreator_dir/$qtcreator_ver/bin/qtcreator.sh"
         sudo sed -i.bak -e "/^LD_LIBRARY_PATH=.*/a LD_LIBRARY_PATH=${libstdc_path}:\$LD_LIBRARY_PATH" $qtcreator_run
     fi
 
+    # Принудительно включаем "Большой DPI". Оция QtCreator "Масштабировать при большом DPI"
+    # не работает в Ubuntu 20.04
+    # Источник: https://github.com/linuxmint/Cinnamon/issues/4902
+
     # Удаляем строку: exec "$bindir/qtcreator" ${1+"$@"}
-    sudo sed -i.bak -e '/exec "$bindir\/qtcreator"/d' $qtcreator_run
+    sudo sed -i.bak -r "/^exec .*\/qtcreator/d" $qtcreator_run
+
+    sudo sh -c "echo 'export QT_SCALE_FACTOR=1'             >> $qtcreator_run"
+    sudo sh -c "echo 'export QT_AUTO_SCREEN_SCALE_FACTOR=0' >> $qtcreator_run"
+    sudo sh -c "echo 'export QT_SCREEN_SCALE_FACTORS=2'     >> $qtcreator_run"
 
     # Не используем QT_SCALE_FACTOR, сильно коробит интерфейс
-    #sudo sh -c "#echo 'export QT_SCALE_FACTOR=1.015'  >> $qtcreator_run"
+    # sudo sh -c "#echo 'export QT_SCALE_FACTOR=1.015'  >> $qtcreator_run"
 
-    sudo sh -c "echo 'export QTC_MENU_FONT_SIZE=10.1' >> $qtcreator_run"
+    # sudo sh -c "echo 'export QTC_MENU_FONT_SIZE=10.1' >> $qtcreator_run"
 
     # Добавляем строку: exec "$bindir/qtcreator" ${1+"$@"}
     sudo sh -c "echo 'exec \"\$bindir/qtcreator\" \${1+\"\$@\"}' >> $qtcreator_run"
