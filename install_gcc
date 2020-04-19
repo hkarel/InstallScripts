@@ -304,8 +304,9 @@ $SUDO ln -sf $prefix/bin/g++ /usr/bin/g++-${ver}
 $SUDO ln -sf $prefix/bin/gcc /usr/bin/gcc-${ver}
 
 # Не создаем больше линки, т.к. это вводит в ступор QBS-сборщик
-#$SUDO ln -sr $prefix/bin/gcc-ar $prefix/bin/ar
-#$SUDO ln -sr $prefix/bin/gcc-nm $prefix/bin/nm
+# [19.04.20] QBS версии 1.15 воспринимает линки нормально
+$SUDO ln -sr $prefix/bin/gcc-ar $prefix/bin/ar
+$SUDO ln -sr $prefix/bin/gcc-nm $prefix/bin/nm
 
 echo "Replace AORIGIN on \$ORIGIN ... "
 libstdc_file=
