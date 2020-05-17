@@ -89,7 +89,8 @@ MAKE=make
 #[ "$os_type" = "FreeBSD" ] && MAKE=gmake
 
 SUDO=
-if [ "$os_name" = "Ubuntu" ] || [ "$os_name" = "Debian" ]; then
+if [ "$os_name" = "Ubuntu" ] || [ "$os_name" = "Debian" ] || [ "$os_name" = "CentOS" ]
+then
     [ "$(id -u)" -ne 0 ] && SUDO=sudo
 else
     if [ "$(id -u)" -ne 0 ]; then
@@ -106,16 +107,21 @@ fi
 
 which chrpath > /dev/null 2>&1
 if [ "$?" -ne 0 ]; then
-    echo "Error: Need install the chrpath utility"
+    echo "Error: Need install 'chrpath' utility"
     exit 1
 fi
 
 which readelf > /dev/null 2>&1
 if [ "$?" -ne 0 ]; then
-    echo "Error: Need install the readelf utility"
+    echo "Error: Need install 'readelf' utility"
     exit 1
 fi
 
+which patch > /dev/null 2>&1
+if [ "$?" -ne 0 ]; then
+    echo "Error: Need install 'patch' utility"
+    exit 1
+fi
 
 function remove_dir()
 {
