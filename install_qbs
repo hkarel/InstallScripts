@@ -33,7 +33,7 @@ fi
 
 gcc_profile_ver=
 gcc_profile_path=
-gcc550_profile_path=
+#gcc840_profile_path=
 
 gcc_version()
 {
@@ -41,31 +41,30 @@ gcc_version()
     if [ $# -eq 1 ]; then 
         local gcc_path=$1
         if [ -x $gcc_path ]; then
-            result=$(bash -c "$gcc_path --version" | head -n1 | sed -r 's/\(.*\)//' | sed -r 's/ +/ /g' | cut -d' ' -f2)
+            if [ "$os_name" = "CentOS" ]; then
+                result=$(bash -c "$gcc_path --version" | head -n1 | sed -r 's/.*([0-9]\.[0-9]\.[0-9]).*/\1/')
+            else
+                result=$(bash -c "$gcc_path --version" | head -n1 | sed -r 's/\(.*\)//' | sed -r 's/ +/ /g' | cut -d' ' -f2)
+            fi
         fi
     fi
     echo "$result"
 }
 
-#
-# Определение версии GCC для конфигурирования профиля QBS
-#
-if [ "$free_bsd_clang" = "no" ]; then
-    which /usr/bin/g++ > /dev/null 2>&1
-    if [ "$?" -eq 0 ]; then
-        gcc_profile_path=/usr/bin/g++
-        gcc_profile_ver=$(gcc_version $gcc_profile_path)
-        if [ $(echo "$gcc_profile_ver" | sed 's/\.//g') -lt "482" ]; then
-            gcc_profile_path=''
-        fi
-    fi
-
-    gcc_profile_ver=5.5.0
-    which /opt/gcc/${gcc_profile_ver}/bin/g++ > /dev/null 2>&1
-    if [ "$?" -eq 0 ]; then
-        gcc550_profile_path=/opt/gcc/$gcc_profile_ver/bin/g++
-    fi
-fi
+# #
+# # Определение версии GCC для конфигурирования профиля QBS
+# #
+# if [ "$free_bsd_clang" = "no" ]; then
+#     which /usr/bin/g++ > /dev/null 2>&1
+#     if [ "$?" -eq 0 ]; then
+#         gcc_profile_path=/usr/bin/g++
+#         gcc_profile_ver=$(gcc_version $gcc_profile_path)
+#         if [ $(echo "$gcc_profile_ver" | sed 's/\.//g') -lt "840" ]; then
+#             gcc_profile_path=/opt/gcc/8.4.0/bin/g++ > /dev/null 2>&1
+#             gcc_profile_ver=$(gcc_version $gcc_profile_path)
+#         fi
+#     fi
+# fi
 
 display_help()
 {
@@ -83,10 +82,11 @@ Usage: ${0##*/} [hcqb]
     qbs branch ............ $branch_qbs
     compiler .............. $compiler
     compiler rpath ........ $compiler_rpath
-    gcc profile path ...... $gcc_profile_path (version: $(gcc_version $gcc_profile_path))
-    gcc55 profile path .... $gcc550_profile_path (version: $(gcc_version $gcc550_profile_path))
+    gcc profile path ...... $gcc_profile_path (version: $gcc_profile_ver)
 EOF
 }
+#gcc84 profile path .... $gcc840_profile_path (version: $(gcc_version $gcc840_profile_path))
+
 
 # Обработка позиционных параметров:
 #    http://wiki.bash-hackers.org/scripting/posparams
@@ -146,10 +146,14 @@ which $qt_path/bin/qmake > /dev/null 2>&1
 [ "$?" -eq 0 ] && qmake=$qt_path/bin/qmake
 
 compiler_ver=$(gcc_version $compiler)
-if [ $(echo "$compiler_ver" | sed 's/\.//g') -lt "540" ]; then
-    compiler=/opt/gcc/5.5.0/bin/g++
-    compiler_rpath=-Wl,-rpath,/opt/gcc/5.5.0/lib64
+if [ $(echo "$compiler_ver" | sed 's/\.//g') -lt "840" ]; then
+    compiler=/opt/gcc/8.4.0/bin/g++
+    compiler_ver=$(gcc_version $compiler)
+    compiler_rpath=-Wl,-rpath,/opt/gcc/8.4.0/lib64
 fi
+
+gcc_profile_path=$compiler
+gcc_profile_ver=$compiler_ver
 
 if [ "$print_help" = "yes" ]; then
     display_help
@@ -157,7 +161,11 @@ if [ "$print_help" = "yes" ]; then
 fi
 
 SUDO=
-if [ "$os_name" = "Ubuntu" ] || [ "$os_name" = "Debian" ] || [ "$os_id" = "neon" ]; then
+if [ "$os_name"    = "Ubuntu" ] \
+   || [ "$os_name" = "Debian" ] \
+   || [ "$os_name" = "CentOS" ] \
+   || [ "$os_id"   = "neon"   ]
+then
     [ "$(id -u)" -ne 0 ] && SUDO=sudo
 else
     if [ "$(id -u)" -ne 0 ]; then
@@ -187,9 +195,9 @@ config_qbs_profile()
         if [ -n "$gcc_profile_path" ]; then
             $QBS setup-toolchains --type gcc $gcc_profile_path gcc
         fi
-        if [ -n "$gcc550_profile_path" ]; then
-            $QBS setup-toolchains --type gcc $gcc550_profile_path gcc55
-        fi
+#         if [ -n "$gcc840_profile_path" ]; then
+#             $QBS setup-toolchains --type gcc $gcc840_profile_path gcc84
+#         fi
     fi
     $QBS config defaultProfile gcc
 
