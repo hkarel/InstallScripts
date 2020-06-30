@@ -9,7 +9,7 @@ qt_path=/opt/qt/5.12/5.12.8
 qmake=
 config_qbs=
 print_help=
-branch_qbs=1.15
+branch_qbs=1.16
 compiler=/usr/bin/g++
 compiler_rpath=
 
