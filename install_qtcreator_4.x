@@ -8,7 +8,7 @@ install=
 symlink_python_remove=
 
 qtcreator_dir=/opt/qtcreator
-qtcreator_ver=4.12
+qtcreator_ver=4.14
 qbs_profile=qtc
 
 # Определение параметров host-системы
