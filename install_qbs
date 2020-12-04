@@ -3,12 +3,11 @@
 set -u
 
 prefix=/opt/qbs
-#qt_path=/opt/qt/5.9-qbs
-qt_path=/opt/qt/5.12/5.12.10
+qt_path=/opt/qt/5.14/5.14.2
 qmake=
 config_qbs=
 print_help=
-branch_qbs=1.16
+branch_qbs=1.18
 compiler=/usr/bin/g++
 compiler_rpath=
 
