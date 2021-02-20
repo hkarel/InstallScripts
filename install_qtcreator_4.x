@@ -241,9 +241,10 @@ if [ "$install" = "yes" ]; then
     # Удаляем строку: exec "$bindir/qtcreator" ${1+"$@"}
     sudo sed -i.bak -r "/^exec .*\/qtcreator/d" $qtcreator_run
 
-    sudo sh -c "echo 'export QT_SCALE_FACTOR=1'             >> $qtcreator_run"
-    sudo sh -c "echo 'export QT_AUTO_SCREEN_SCALE_FACTOR=0' >> $qtcreator_run"
-    sudo sh -c "echo 'export QT_SCREEN_SCALE_FACTORS=2'     >> $qtcreator_run"
+    sudo sh -c "echo 'export QT_SCALE_FACTOR=1'                >> $qtcreator_run"
+    sudo sh -c "echo 'export QT_AUTO_SCREEN_SCALE_FACTOR=0'    >> $qtcreator_run"
+    sudo sh -c "echo 'export QT_SCREEN_SCALE_FACTORS=2'        >> $qtcreator_run"
+    sudo sh -c "echo 'export QTC_WELCOMEPAGE_FONT_SIZE_DOWN=1' >> $qtcreator_run"
 
     # Не используем QT_SCALE_FACTOR, сильно коробит интерфейс
     # sudo sh -c "#echo 'export QT_SCALE_FACTOR=1.015'  >> $qtcreator_run"
