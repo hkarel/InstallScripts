@@ -3,7 +3,7 @@
 set -u
 
 prefix=/opt/qbs
-qt_path=/opt/qt/5.14/5.14.2
+qt_path=/opt/qt/5.15/5.15.2
 qmake=
 config_qbs=
 print_help=
