@@ -4,6 +4,9 @@ set -u
 
 prefix=/opt/qbs
 qt_path=/opt/qt/5.15/5.15.2
+#--- Для arm-платформ ---
+#qt_path=/opt/qt/5.15-qbs
+#---
 qmake=
 config_qbs=
 print_help=
@@ -298,7 +301,7 @@ else
 fi
 
 $MAKE -j${jobs}
-#$MAKE docs
+# $MAKE docs
 
 cd /opt
 if [ -d qbs/ ]; then
@@ -306,7 +309,6 @@ if [ -d qbs/ ]; then
     $SUDO rm -rf qbs/
 fi
 cd $src_dir
-
 
 $SUDO $MAKE install
 

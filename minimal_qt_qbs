@@ -9,7 +9,7 @@
 
 set -u
 
-branch=5.9
+branch=5.15
 src_dir=~/Tools/qt5-qbs
 
 which git > /dev/null 2>&1
@@ -43,7 +43,7 @@ git branch -D $branch
 set -e
 git checkout --track origin/$branch
 
-build_modules='qtbase|qtscript|qtxmlpatterns'
+build_modules='qtbase'
 skip_modules=$(find ./ -maxdepth 1 -type d -name 'qt*' | sed 's|\./||' | grep -v -E $build_modules)
 #skip_modules=$(find ./ -maxdepth 1 -type d -name 'qt*' | sed 's|\./||' | grep -v -E $build_modules | xargs -n1 echo '-skip')
 #echo "1${skip_modules}1"

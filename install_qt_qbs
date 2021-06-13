@@ -10,8 +10,8 @@ set -u
 
 rebuild=
 print_help=
-branch=5.9
-prefix=/opt/qt/5.9-qbs
+branch=5.15
+prefix=/opt/qt/5.15-qbs
 build_modules='qtbase|qtscript|qtxmlpatterns'
 need_modify_mkspecs=no
 minimize_repo=yes
@@ -185,14 +185,12 @@ done
     -make libs \
     $skip_modules_cmd \
     -no-sql-db2 -no-sql-ibase -no-sql-mysql -no-sql-oci -no-sql-odbc -no-sql-psql -no-sql-tds \
-    -no-qml-debug \
     -no-mtdev \
     -no-gif -no-libpng -no-libjpeg -no-ico \
     -no-freetype \
     -no-harfbuzz \
     -no-openssl \
     -no-libproxy \
-    -no-xinput2 \
     -no-xcb-xlib \
     -no-compile-examples \
     -no-gui \
@@ -207,7 +205,6 @@ done
     -no-gbm \
     -no-directfb \
     -no-linuxfb \
-    -no-mirclient \
     -no-xcb \
     -no-opengl \
     -no-libinput \
