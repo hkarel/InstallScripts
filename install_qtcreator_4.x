@@ -251,8 +251,9 @@ if [ "$install" = "yes" ]; then
 
     # sudo sh -c "echo 'export QTC_MENU_FONT_SIZE=10.1' >> $qtcreator_run"
 
-    # Добавляем строку: exec "$bindir/qtcreator" ${1+"$@"}
-    sudo sh -c "echo 'exec \"\$bindir/qtcreator\" \${1+\"\$@\"}' >> $qtcreator_run"
+    # Добавляем строку: exec "$bindir/qtcreator" -user-library-path "$_ORIGINAL_LD_LIBRARY_PATH" ${1+"$@"}
+    # Старый вариан: sudo sh -c "echo 'exec \"\$bindir/qtcreator\" \${1+\"\$@\"}' >> $qtcreator_run"
+    sudo sh -c "echo 'exec \"\$bindir/qtcreator\" -user-library-path \"\$_ORIGINAL_LD_LIBRARY_PATH\" \${1+\"\$@\"}' >> $qtcreator_run"
 
     echo "Installation successfully completed"
 fi
