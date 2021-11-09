@@ -249,23 +249,8 @@ patch -p0 << 'EOF'
 EOF
 }
 
-function strip_debug_info()
-{
-    if [ ! -L $1 ]; then
-        res=$(file $1 | grep -E 'LSB +shared object|ar archive|LSB +relocatable')
-        if [ -n "$res" ]; then
-            echo "Stripped: $1"
-            $SUDO strip --strip-debug $1
-            return
-        fi
-
-        res=$(file $1 | grep -E 'LSB +executable')
-        if [ -n "$res" ]; then
-            echo "Stripped: $1"
-            $SUDO strip --strip-all $1
-        fi
-    fi
-}
+# Функция удаления отладочной информации
+. strip_debug_info
 
 if [ ! -e $archive ]; then
     wget -c ftp://ftp.gnu.org/gnu/gcc/gcc-${ver}/${archive}
