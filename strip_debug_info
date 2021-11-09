@@ -6,14 +6,14 @@ function strip_debug_info()
         res=$(file $1 | grep -E 'LSB +shared object|ar archive|LSB +relocatable')
         if [ -n "$res" ]; then
             echo "Stripped: $1"
-            strip --strip-debug --strip-unneeded $1
+            $SUDO strip --strip-debug --strip-unneeded $1
             return
         fi
 
         res=$(file $1 | grep -E 'LSB +executable')
         if [ -n "$res" ]; then
             echo "Stripped: $1"
-            strip --strip-debug --strip-unneeded $1
+            $SUDO strip --strip-all $1
         fi
     fi
 }
