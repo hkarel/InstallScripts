@@ -12,7 +12,6 @@ rebuild=
 print_help=
 branch=5.15
 prefix=/opt/qt/5.15-qbs
-build_modules='qtbase|qtscript|qtxmlpatterns'
 need_modify_mkspecs=no
 minimize_repo=yes
 src_dir=~/Tools/qt5-qbs
@@ -166,6 +165,8 @@ if [ "$need_modify_mkspecs" = "yes" ]; then
 
     echo "QMAKE_LFLAGS += -Wl,-rpath,/opt/gcc/${compiler_ver}/lib64" >> $src_dir/qtbase/mkspecs/common/g++-base.conf
 fi
+
+build_modules='qtbase|qtxmlpatterns'
 
 set +e
 #skip_modules=$(find ./ -maxdepth 1 -type d -name 'qt*' | sed 's|\./||' | grep -v -E $build_modules | xargs -n1 echo '-skip')
