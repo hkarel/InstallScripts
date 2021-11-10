@@ -2,11 +2,10 @@
 
 set -u
 
+#qt_path=/opt/qt/5.15/5.15.2
+qt_path=/opt/qt/5.15-qbs
+
 prefix=/opt/qbs
-qt_path=/opt/qt/5.15/5.15.2
-#--- Для arm-платформ ---
-#qt_path=/opt/qt/5.15-qbs
-#---
 qmake=
 config_qbs=
 print_help=
@@ -272,9 +271,11 @@ git fetch --all
 
 set +e
 git checkout master
+git pull -r
 git branch -D $branch_qbs
 set -e
 git checkout --track origin/$branch_qbs
+git submodule update --init --recursive
 
 # Исключаем тесты из сборки
 sed -i '/tests/d' qbs.pro
