@@ -39,13 +39,13 @@ git fetch --all
 
 set +e
 git checkout dev
+git pull -r
 git branch -D $branch
 set -e
 git checkout --track origin/$branch
 
-build_modules='qtbase'
-skip_modules=$(find ./ -maxdepth 1 -type d -name 'qt*' | sed 's|\./||' | grep -v -E $build_modules)
-#skip_modules=$(find ./ -maxdepth 1 -type d -name 'qt*' | sed 's|\./||' | grep -v -E $build_modules | xargs -n1 echo '-skip')
+skip_modules=$(find ./ -maxdepth 1 -type d -name 'qt*' | sed 's|\./||' | grep -v 'qtbase')
+#skip_modules=$(find ./ -maxdepth 1 -type d -name 'qt*' | sed 's|\./||' | grep -v 'qtbase' | xargs -n1 echo '-skip')
 #echo "1${skip_modules}1"
 #exit
 
