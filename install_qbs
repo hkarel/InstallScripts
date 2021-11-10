@@ -146,10 +146,10 @@ which $qt_path/bin/qmake > /dev/null 2>&1
 [ "$?" -eq 0 ] && qmake=$qt_path/bin/qmake
 
 compiler_ver=$(gcc_version $compiler)
-if [ $(echo "$compiler_ver" | sed 's/\.//g') -lt "840" ]; then
-    compiler=/opt/gcc/8.4.0/bin/g++
-    compiler_ver=$(gcc_version $compiler)
-    compiler_rpath=-Wl,-rpath,/opt/gcc/8.4.0/lib64
+if [ $(echo "$compiler_ver" | sed 's/\.//g') -lt "930" ]; then
+    compiler_ver=9.4.0
+    compiler=/opt/gcc/${compiler_ver}/bin/g++
+    compiler_rpath=-Wl,-rpath,/opt/gcc/${compiler_ver}/lib64
 fi
 
 gcc_profile_path=$compiler
