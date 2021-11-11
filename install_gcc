@@ -14,6 +14,14 @@ print_help=
 with_default_libstdcxx_abi=new
 compatible=no
 
+# Функция удаления отладочной информации
+if [ ! -e $(dirname $0)/strip_debug_info ]; then
+    echo "Error: strip_debug_info script not found."
+    exit 1
+fi
+. $(dirname $0)/strip_debug_info
+# ---
+
 jobs=$(nproc)
 mem_size=$(free -m | sed '2!d' | sed 's/  */ /g' | cut -d' ' -f2)
 [ "$mem_size" -lt 2100 ] && jobs=2
@@ -254,9 +262,6 @@ patch -p0 << 'EOF'
 
 EOF
 }
-
-# Функция удаления отладочной информации
-. strip_debug_info
 
 if [ ! -e $archive ]; then
     wget -c ftp://ftp.gnu.org/gnu/gcc/gcc-${ver}/${archive}
