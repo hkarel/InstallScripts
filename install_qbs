@@ -19,6 +19,13 @@ if [ ! -e $(dirname $0)/os_detect ]; then
     exit 1
 fi
 . $(dirname $0)/os_detect
+
+# Определение версии GCC компилятора
+if [ ! -e $(dirname $0)/gcc_version ]; then
+    echo "Error: gcc_version script not found."
+    exit 1
+fi
+. $(dirname $0)/gcc_version
 # ---
 
 jobs=$(nproc)
@@ -35,22 +42,6 @@ gcc_profile_ver=
 gcc_profile_path=
 #gcc840_profile_path=
 
-gcc_version()
-{
-    local result="undef"
-    if [ $# -eq 1 ]; then 
-        local gcc_path=$1
-        if [ -x $gcc_path ]; then
-            if [ "$os_name" = "CentOS" ]; then
-                result=$(bash -c "$gcc_path --version" | head -n1 | sed -r 's/.*([0-9]\.[0-9]\.[0-9]).*/\1/')
-            else
-                result=$(bash -c "$gcc_path --version" | head -n1 | sed -r 's/\(.*\)//' | sed -r 's/ +/ /g' | cut -d' ' -f2)
-            fi
-        fi
-    fi
-    echo "$result"
-}
-
 # #
 # # Определение версии GCC для конфигурирования профиля QBS
 # #
@@ -66,7 +57,7 @@ gcc_version()
 #     fi
 # fi
 
-display_help()
+function display_help()
 {
 cat << EOF
 Usage: ${0##*/} [hcqb]
@@ -178,7 +169,7 @@ MAKE=make
 [ "$os_type" = "FreeBSD" ] && MAKE=gmake
 
 # BEGIN --- Минимальное конфигурирование профиля ---
-config_qbs_profile()
+function config_qbs_profile()
 {
     local QBS=$prefix/bin/qbs
     if [ ! -x $QBS ]; then
