@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Функция удаления отладочной информации
 function strip_debug_info()
 {
     if [ ! -L $1 ]; then
