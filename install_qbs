@@ -15,14 +15,14 @@ compiler_rpath=
 
 # Определение параметров host-системы
 if [ ! -e $(dirname $0)/os_detect ]; then
-    echo "Error: os_detect script not found."
+    echo "Error: os_detect script not found"
     exit 1
 fi
 . $(dirname $0)/os_detect
 
 # Определение версии GCC компилятора
 if [ ! -e $(dirname $0)/gcc_version ]; then
-    echo "Error: gcc_version script not found."
+    echo "Error: gcc_version script not found"
     exit 1
 fi
 . $(dirname $0)/gcc_version

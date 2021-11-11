@@ -13,7 +13,7 @@ qbs_profile=qtc
 
 # Определение параметров host-системы
 if [ ! -e $(dirname $0)/os_detect ]; then
-    echo "Error: os_detect script not found."
+    echo "Error: os_detect script not found"
     exit 1
 fi
 . $(dirname $0)/os_detect
