@@ -14,6 +14,13 @@ print_help=
 with_default_libstdcxx_abi=new
 compatible=no
 
+# Определение параметров host-системы
+if [ ! -e $(dirname $0)/os_detect ]; then
+    echo "Error: os_detect script not found."
+    exit 1
+fi
+. $(dirname $0)/os_detect
+
 # Функция удаления отладочной информации
 if [ ! -e $(dirname $0)/strip_debug_info ]; then
     echo "Error: strip_debug_info script not found."
@@ -90,14 +97,6 @@ if [ "$print_help" = "yes" ]; then
     display_help
     exit 0
 fi
-
-# Определение параметров host-системы
-if [ ! -e $(dirname $0)/os_detect ]; then
-    echo "Error: os_detect script not found."
-    exit 1
-fi
-. $(dirname $0)/os_detect
-# ---
 
 MAKE=make
 #[ "$os_type" = "FreeBSD" ] && MAKE=gmake
