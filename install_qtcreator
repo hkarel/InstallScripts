@@ -2,6 +2,7 @@
 
 set -u
 
+SUDO=sudo
 rebuild=
 print_help=
 install=
@@ -17,6 +18,13 @@ if [ ! -e $(dirname $0)/os_detect ]; then
     exit 1
 fi
 . $(dirname $0)/os_detect
+
+# Функция удаления отладочной информации
+if [ ! -e $(dirname $0)/strip_debug_info ]; then
+    echo "Error: strip_debug_info script not found"
+    exit 1
+fi
+. $(dirname $0)/strip_debug_info
 # ---
 
 function display_help()
@@ -79,35 +87,9 @@ if [ "$print_help" = "yes" ]; then
     exit 0
 fi
 
-# # Определение параметров host-системы
-# if [ ! -e $(dirname $0)/os_detect ]; then
-#     echo "Error: os_detect script not found."
-#     exit 1
-# fi
-# . $(dirname $0)/os_detect
-# # ---
-
 function qbs_param()
 {
     qbs config $1 | cut -d' ' -f2 | sed 's/\"//g'
-}
-
-function strip_debug_info()
-{
-    if [ ! -L $1 ]; then
-        res=$(file $1 | grep -E 'LSB +shared object')
-        if [ -n "$res" ]; then
-            echo "Stripped: $1"
-            sudo strip --strip-debug --strip-unneeded $1
-            return
-        fi
-
-        res=$(file $1 | grep -E 'LSB +executable')
-        if [ -n "$res" ]; then
-            echo "Stripped: $1"
-            sudo strip --strip-all $1
-        fi
-    fi
 }
 
 which git > /dev/null 2>&1
