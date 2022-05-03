@@ -177,6 +177,7 @@ $QBS build \
     --command-echo-mode command-line \
     qbs.buildVariant:release \
     qbs.installPrefix:"" \
+    products.Translations.builtByDefault:true \
     profile:$qbs_profile
 
 if [ "$install" = "yes" ]; then
