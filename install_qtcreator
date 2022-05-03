@@ -6,6 +6,7 @@ SUDO=sudo
 rebuild=
 print_help=
 install=
+clear_build=
 symlink_python_remove=
 
 qtcreator_dir=/opt/qtcreator
@@ -36,6 +37,7 @@ Usage: ${0##*/}
   -r --rebuild   full rebuild of project
   -v --qtc-vers  qtcreator version
   -q --qbs_prof  qbs profile
+  -c --clear     clear build files
   Current build parameters:
     qtcreator istall .... $qtcreator_dir/$qtcreator_ver
     qtcreator version ... $qtcreator_ver
@@ -71,6 +73,10 @@ do
         -q|--qbs_prof)
             qbs_profile=$2
             shift 2
+            ;;
+        -c|--clear)
+            clear_build=yes
+            shift
             ;;
         -*)
             echo "Error: Unknown option: $1" >&2
@@ -239,4 +245,15 @@ if [ "$install" = "yes" ]; then
     sudo sh -c "echo 'exec \"\$bindir/qtcreator\" -user-library-path \"\$_ORIGINAL_LD_LIBRARY_PATH\" \${1+\"\$@\"}' >> $qtcreator_run"
 
     echo "Installation successfully completed"
+fi
+
+if [ "$clear_build" = "yes" ]; then
+    cd $src_dir
+    git checkout -f > /dev/null
+    git submodule foreach --recursive git checkout -f > /dev/null
+
+    git clean -dfx > /dev/null
+    git submodule foreach --recursive git clean -dfx > /dev/null
+
+    echo "Clear build files completed"
 fi
