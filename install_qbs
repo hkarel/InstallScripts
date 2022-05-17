@@ -248,7 +248,8 @@ set -e
 if [ ! -d .git ]; then
     rm -rf ./*
     #git clone https://gitorious.org/qt-labs/qbs.git ./
-    git clone git://code.qt.io/qt-labs/qbs.git ./
+    #git clone git://code.qt.io/qt-labs/qbs.git ./
+    git clone https://code.qt.io/qbs/qbs.git ./
 fi
 
 if [ ! -d .git ]; then
