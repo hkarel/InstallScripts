@@ -2,7 +2,7 @@
 
 set -u
 
-ver=9.4.0
+ver=9.5.0
 not_remove_dir=
 print_help=
 
@@ -43,7 +43,7 @@ Usage: ${0##*/}
   -n --not-rm               not remove of source files directory after compilation
   -v --gcc-vers             GCC version
   Current build parameters:
-    version .......... $ver (accessible values: 5.5.0, 7.4.0, 8.4.0, 9.4.0)
+    version .......... $ver (accessible values: 8.4.0, 9.4.0, 9.5.0)
     archive .......... $archive
     archive dir ...... $archive_dir
     src dir .......... $src_dir
