@@ -37,6 +37,8 @@ fi
 # ---
 
 jobs=$(nproc)
+[ "$jobs" -gt 16 ] && jobs=16
+
 mem_size=$(free -m | sed '2!d' | sed 's/  */ /g' | cut -d' ' -f2)
 [ "$mem_size" -lt 2100 ] && jobs=3
 [ "$mem_size" -lt 510  ] && jobs=2
@@ -101,8 +103,8 @@ do
 done
 
 compiler_ver=$(gcc_version $compiler_cc)
-if [ $(echo "$compiler_ver" | sed 's/\.//g') -lt "540" ]; then
-    compiler_ver=5.5.0
+if [ $(echo "$compiler_ver" | sed 's/\.//g') -lt "940" ]; then
+    compiler_ver=9.4.0
     compiler_cc=/opt/gcc/${compiler_ver}/bin/gcc
     compiler_cxx=/opt/gcc/${compiler_ver}/bin/g++
     compiler_rpath=-Wl,-rpath,/opt/gcc/${compiler_ver}/lib64
@@ -131,11 +133,15 @@ if [ ! -d .git ]; then
     exit 1;
 fi
 
-[ -z "$(dpkg -l | grep -P '^ii\s+libsqlite0-dev')" ]    && sudo apt-get install -y libsqlite0-dev
-[ -z "$(dpkg -l | grep -P '^ii\s+zlib1g-dev')" ]        && sudo apt-get install -y zlib1g-dev
-#[ -z "$(dpkg -l | grep -P '^ii\s+libudev-dev')" ]       && sudo apt-get install -y libudev-dev
-#[ -z "$(dpkg -l | grep -P '^ii\s+libxkbcommon-dev')" ]  && sudo apt-get install -y libxkbcommon-dev
-#[ -z "$(dpkg -l | grep -P '^ii\s+libicu-dev')" ]        && sudo apt-get install -y libicu-dev
+if [ "$os_id" = "ubuntu" ]; then
+    [ -z "$(dpkg -l | grep -P '^ii\s+libsqlite0-dev')" ]    && sudo apt-get install -y libsqlite0-dev
+    [ -z "$(dpkg -l | grep -P '^ii\s+zlib1g-dev')" ]        && sudo apt-get install -y zlib1g-dev
+    #[ -z "$(dpkg -l | grep -P '^ii\s+libudev-dev')" ]       && sudo apt-get install -y libudev-dev
+    #[ -z "$(dpkg -l | grep -P '^ii\s+libxkbcommon-dev')" ]  && sudo apt-get install -y libxkbcommon-dev
+    #[ -z "$(dpkg -l | grep -P '^ii\s+libicu-dev')" ]        && sudo apt-get install -y libicu-dev
+else
+    echo "!!! Check install libs: libsqlite0-dev, zlib1g-dev"
+fi
 
 set -e
 
@@ -205,6 +211,13 @@ done
     -no-opengl \
     -no-libinput \
     -no-system-proxies
+
+
+if [ "$os_id" = "centos" ]; then
+    # Фикс для Centos7
+    sed -e "s/#define QT_FEATURE_std_atomic64 -1/#define QT_FEATURE_std_atomic64 1/" \
+        -i $src_dir/qtbase/src/corelib/qtcore-config.h
+fi
 
 #exit 0
 
