@@ -30,6 +30,8 @@ fi
 # ---
 
 jobs=$(nproc)
+[ "$jobs" -gt 16 ] && jobs=16
+
 mem_size=$(free -m | sed '2!d' | sed 's/  */ /g' | cut -d' ' -f2)
 [ "$mem_size" -lt 2100 ] && jobs=2
 [ "$mem_size" -lt 510  ] && jobs=1
