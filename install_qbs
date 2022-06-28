@@ -29,6 +29,8 @@ fi
 # ---
 
 jobs=$(nproc)
+[ "$jobs" -gt 16 ] && jobs=16
+
 mem_size=$(free -m | sed '2!d' | sed 's/  */ /g' | cut -d' ' -f2)
 [ "$mem_size" -lt 2100 ] && jobs=3
 [ "$mem_size" -lt 510  ] && jobs=2
@@ -137,7 +139,7 @@ which $qt_path/bin/qmake > /dev/null 2>&1
 [ "$?" -eq 0 ] && qmake=$qt_path/bin/qmake
 
 compiler_ver=$(gcc_version $compiler)
-if [ $(echo "$compiler_ver" | sed 's/\.//g') -lt "930" ]; then
+if [ $(echo "$compiler_ver" | sed 's/\.//g') -lt "940" ]; then
     compiler_ver=9.4.0
     compiler=/opt/gcc/${compiler_ver}/bin/g++
     compiler_rpath=-Wl,-rpath,/opt/gcc/${compiler_ver}/lib64
