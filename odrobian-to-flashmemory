@@ -1,0 +1,115 @@
+#!/bin/bash
+
+#
+# Скрипт выполняет запись образа ODROBIAN на флешь-память. Скрипт работает
+# согласно инструкции описанной здесь:
+#   http://odroid.com/dokuwiki/doku.php?id=en:odroid_flashing_tools#notes
+#
+
+set -e
+set -u
+
+disk_name=${1:-""}
+img_file=${2:-""}
+
+disk_dev=/dev/disk/by-id/$disk_name
+
+
+display_help()
+{
+cat << EOF
+Usage: ${0##*/} [-hp] flash_memory_disk_device obrobian_image_file
+  -h  display this help and exit
+  -p  print the names of available disk devices (by id)
+  See instruction: http://odroid.com/dokuwiki/doku.php?id=en:odroid_flashing_tools#notes
+EOF
+}
+
+print_help=
+print_dev=
+
+# Обработка позиционных параметров:
+#    http://wiki.bash-hackers.org/scripting/posparams
+while test -n ${1:-""}
+do
+    case "$1" in
+        -h)
+            print_help=yes
+            shift
+            ;;
+        -p)
+            print_dev=yes
+            shift
+            ;;
+        -*)
+            echo "Error: Unknown option: $1" >&2
+            exit 1
+            ;;
+        *)  # No more options
+            break
+            ;;
+    esac
+done
+
+if [ "$print_help" = "yes" ]; then
+    display_help
+    exit 0
+fi
+
+if [ "$print_dev" = "yes" ]; then
+    echo "Directory: /dev/disk/by-id"
+    ls -la /dev/disk/by-id
+    echo "---"
+    ls -1 /dev/disk/by-id
+    exit 0
+fi
+
+if [ -z "$disk_name" ]; then
+    echo "Error: Name of the disk device isn't defined" >&2
+    display_help
+    exit 1
+fi
+
+if [ -z "$img_file" ]; then
+    echo "Error: Odrobian image file isn't defined" >&2
+    display_help
+    exit 1
+fi
+
+if [ ! -e $disk_dev ]; then
+    echo "Disk not exists: $disk_dev"
+    exit 1
+fi
+
+if [ ! -e "$img_file" ]; then
+    echo "File not exists: $img_file"
+    exit 1
+fi
+
+response=
+
+echo "Source: $img_file"
+echo "Destination: $disk_dev"
+read -r -p "Everything is correct? [yes/no]: " response; response=${response:-'no'}
+if [ "$response" != "yes" ]; then
+    exit 0
+fi
+
+echo "Record image data..."
+sudo dd if=$img_file of=$disk_dev bs=1M conv=fsync
+sudo sync
+echo "Record is complete"
+
+echo "Validation of the written data..."
+
+sum1=$(sudo dd if=$disk_dev bs=512 count=$(($(stat -c%s $img_file)/512)) | md5sum  | cut -d' ' -f1)
+echo $sum1
+
+sum2=$(dd if=$img_file bs=512 count=$(($(stat -c%s $img_file)/512)) | md5sum | cut -d' ' -f1)
+echo $sum2
+
+if [ "$sum1" = "$sum2" ]; then
+    echo -e "Validation data is successful\n"
+else
+    echo -e "Failed validation data\n"
+fi
