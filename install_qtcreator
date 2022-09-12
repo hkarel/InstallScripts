@@ -10,8 +10,12 @@ clear_build=
 symlink_python_remove=
 
 qtcreator_dir=/opt/qtcreator
-qtcreator_ver=7.0
-qbs_profile=qtc
+qtcreator_ver=8.0
+qbs_profile=qtc-qt515-4
+
+qt_ver=5.15.4
+qt_ver2=$(echo "$qt_ver" | sed 's/\./_/g')
+qt_ppa_file=beineri-ubuntu-opt-qt-${qt_ver2}-focal-focal.list
 
 # Определение параметров host-системы
 if [ ! -e $(dirname $0)/os_detect ]; then
@@ -104,23 +108,40 @@ if [ "$?" -ne 0 ]; then
     exit 1
 fi
 
+if [ ! -e "/etc/apt/sources.list.d/$qt_ppa_file" ]; then
+    echo "Error: PPA file $qt_ppa_file not found";
+    echo "    Use: sudo add-apt-repository ppa:beineri/opt-qt-${qt_ver}-focal"
+    exit 1
+fi
+
+function check_need_package()
+{
+    dpkg -s $1 &> /dev/null
+    [ "$?" -ne 0 ] && need_packages="$need_packages $1"
+}
+
+need_packages=
 if [ ! -e /usr/bin/realpath ]; then
-    if [ -z "$(dpkg -l | grep -P '^ii\s+realpath')" ]; then
-        echo "Need install 'realpath' utility"
-        sudo apt-get install -y realpath
-    fi
+    check_need_package 'realpath'
 fi
+check_need_package 'libdw-dev'
+check_need_package 'libgl1-mesa-dev'
 
-if [ -z "$(dpkg -l | grep -P '^ii\s+libdw-dev')" ]; then
-    echo "Need install 'libdw-dev' package"
-    sudo apt-get install -y libdw-dev
-fi
+check_need_package 'qt515base'
+check_need_package 'qt515declarative'
+check_need_package 'qt515imageformats'
+check_need_package 'qt515location'
+check_need_package 'qt515quickcontrols'
+check_need_package 'qt515quickcontrols2'
+check_need_package 'qt515svg'
+check_need_package 'qt515tools'
+check_need_package 'qt515translations'
+check_need_package 'qt515x11extras'
 
-if [ "$os_id" = "ubuntu" -a "$os_ver" \> "19.04" ]; then
-    if [ -z "$(dpkg -l | grep -P '^ii\s+libgl1-mesa-dev')" ]; then
-        echo "Need install 'libgl1-mesa-dev' package"
-        sudo apt-get install -y libgl1-mesa-dev
-    fi
+if [ -n "$need_packages" ]; then
+    echo "Error: Need to install packages:$need_packages"
+    echo "    Use: sudo apt-get install $need_packages"
+    exit 1
 fi
 
 qbs_gxx_profile=$(qbs_param profiles.$qbs_profile.baseProfile)
