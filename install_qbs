@@ -139,9 +139,13 @@ which $qt_path/bin/qmake > /dev/null 2>&1
 [ "$?" -eq 0 ] && qmake=$qt_path/bin/qmake
 
 compiler_ver=$(gcc_version $compiler)
-if [ $(echo "$compiler_ver" | sed 's/\.//g') -lt "940" ]; then
-    compiler_ver=9.4.0
+if [ "$compiler_ver" \< "9.4.0" ]; then
+    compiler_ver=9.5.0
     compiler=/opt/gcc/${compiler_ver}/bin/g++
+    if [ ! -e "$compiler" ]; then
+        compiler_ver=9.4.0
+        compiler=/opt/gcc/${compiler_ver}/bin/g++
+    fi
     compiler_rpath=-Wl,-rpath,/opt/gcc/${compiler_ver}/lib64
 fi
 
@@ -157,6 +161,7 @@ SUDO=
 if [ "$os_name"    = "Ubuntu" ] \
    || [ "$os_name" = "Debian" ] \
    || [ "$os_name" = "CentOS" ] \
+   || [ "$os_name" = "Rocky"  ] \
    || [ "$os_id"   = "neon"   ]
 then
     [ "$(id -u)" -ne 0 ] && SUDO=sudo
