@@ -9,7 +9,7 @@ prefix=/opt/qbs
 qmake=
 config_qbs=
 print_help=
-branch_qbs=1.23
+branch_qbs=1.24
 compiler=/usr/bin/g++
 compiler_rpath=
 
