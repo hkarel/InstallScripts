@@ -2,8 +2,8 @@
 
 set -u
 
-#qt_path=/opt/qt/5.15/5.15.2
 qt_path=/opt/qt/5.15-qbs
+#qt_path=/opt/qt/5.15/5.15.2
 
 prefix=/opt/qbs
 qmake=
@@ -13,19 +13,30 @@ branch_qbs=1.23
 compiler=/usr/bin/g++
 compiler_rpath=
 
+# Директория этого скрипта
+script_dir=$(dirname $(readlink -f $0))
+echo "script_dir: $script_dir"
+
 # Определение параметров host-системы
-if [ ! -e $(dirname $0)/os_detect ]; then
+if [ ! -e $script_dir/os_detect ]; then
     echo "Error: os_detect script not found"
     exit 1
 fi
-. $(dirname $0)/os_detect
+. $script_dir/os_detect
 
 # Определение версии GCC компилятора
-if [ ! -e $(dirname $0)/gcc_version ]; then
+if [ ! -e $script_dir/gcc_version ]; then
     echo "Error: gcc_version script not found"
     exit 1
 fi
-. $(dirname $0)/gcc_version
+. $script_dir/gcc_version
+
+# Функция удаления отладочной информации
+if [ ! -e $script_dir/strip_debug_info ]; then
+    echo "Error: strip_debug_info script not found"
+    exit 1
+fi
+. $script_dir/strip_debug_info
 # ---
 
 jobs=$(nproc)
@@ -276,48 +287,63 @@ set -e
 git checkout --track origin/$branch_qbs
 git submodule update --init --recursive
 
-# Исключаем тесты из сборки
-sed -i '/tests/d' qbs.pro
-
 # Исключаем из сборки графический конфигуратор, нам нужна только консольная часть
-sed -i '/config-ui/d' src/app/app.pro
+sed -i '/config-ui/d' src/app/CMakeLists.txt
+sed -i -e '/COMPONENTS/s/Gui//' -e '/COMPONENTS/s/Widgets//' CMakeLists.txt
 
-# Понижаем требования к Qt до версии 5.9.5
-#sed -i 's/(5, 11, 0)/(5, 9, 5)/' qbs.pro
-#sed -i 's/Qt 5.11.0/Qt 5.9.5/' qbs.pro
+# if [ "$os_type" = "FreeBSD" ]; then
+#     $qmake -r \
+#         QMAKE_LFLAGS+=-Wl,-z,origin \
+#         QMAKE_LFLAGS+=-Wl,-rpath,${prefix}/lib \
+#         QMAKE_LIBDIR+=/usr/local/lib \
+#         QBS_INSTALL_PREFIX=${prefix}
+# else
+#     $qmake -r \
+#         QBS_INSTALL_PREFIX=${prefix} \
+#         QMAKE_CXX=$compiler \
+#         QMAKE_LINK=$compiler \
+#         QMAKE_LFLAGS+=$compiler_rpath
+# fi
 
-if [ "$os_type" = "FreeBSD" ]; then
-    $qmake -r \
-        QMAKE_LFLAGS+=-Wl,-z,origin \
-        QMAKE_LFLAGS+=-Wl,-rpath,${prefix}/lib \
-        QMAKE_LIBDIR+=/usr/local/lib \
-        QBS_INSTALL_PREFIX=${prefix}
-else
-    $qmake -r \
-        QBS_INSTALL_PREFIX=${prefix} \
-        QMAKE_CXX=$compiler \
-        QMAKE_LINK=$compiler \
-        QMAKE_LFLAGS+=$compiler_rpath
-fi
+mkdir $src_dir/build
+cd $src_dir/build
+
+cmake \
+  -D CMAKE_BUILD_TYPE=Release \
+  -D CMAKE_INSTALL_PREFIX=${prefix} \
+  -D Qt5_DIR=${qt_path}/lib/cmake/Qt5 \
+  -D CMAKE_INSTALL_RPATH_USE_LINK_PATH=TRUE \
+  -D WITH_TESTS=OFF \
+  -D WITH_UNIT_TESTS=OFF \
+  ..
 
 $MAKE -j${jobs}
-# $MAKE docs
 
 cd /opt
 if [ -d qbs/ ]; then
     $SUDO tar -cjf qbs_$(date +%Y.%m.%d_%H.%M.%S).tar.bz2 qbs/
     $SUDO rm -rf qbs/
 fi
-cd $src_dir
+cd $src_dir/build
 
 $SUDO $MAKE install
 
-if [ "$os_name" = "FreeBSD" ]; then
-    echo "Create symlinks ... "
-    ln -sf $prefix/bin/qbs /usr/bin/qbs
-else
-    $SUDO su root -c "echo 'export PATH=\$PATH:${prefix}/bin' > /etc/profile.d/qbs.sh"
-fi
+set +e
+echo "Removing debug info ... "
+for f in $(find $prefix/bin             -type f); do strip_debug_info $f; done
+for f in $(find $prefix/lib             -type f); do strip_debug_info $f; done
+for f in $(find $prefix/lib/qbs/plugins -type f); do strip_debug_info $f; done
+for f in $(find $prefix/libexec/qbs     -type f); do strip_debug_info $f; done
+set -e
+
+# if [ "$os_name" = "FreeBSD" ]; then
+#     echo "Create symlinks ... "
+#     ln -sf $prefix/bin/qbs /usr/bin/qbs
+# else
+#     $SUDO su root -c "echo 'export PATH=\$PATH:${prefix}/bin' > /etc/profile.d/qbs.sh"
+# fi
+
+$SUDO su root -c "echo 'export PATH=\$PATH:${prefix}/bin' > /etc/profile.d/qbs.sh"
 
 config_qbs_profile
 
