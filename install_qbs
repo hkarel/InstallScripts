@@ -169,11 +169,11 @@ if [ "$print_help" = "yes" ]; then
 fi
 
 SUDO=
-if [ "$os_name"    = "Ubuntu" ] \
-   || [ "$os_name" = "Debian" ] \
-   || [ "$os_name" = "CentOS" ] \
-   || [ "$os_name" = "Rocky"  ] \
-   || [ "$os_id"   = "neon"   ]
+if [ "$os_id"    = "ubuntu" ] \
+   || [ "$os_id" = "debian" ] \
+   || [ "$os_id" = "centos" ] \
+   || [ "$os_id" = "rocky"  ] \
+   || [ "$os_id" = "neon"   ]
 then
     [ "$(id -u)" -ne 0 ] && SUDO=sudo
 else
