@@ -7,11 +7,13 @@ function gcc_version()
     if [ $# -eq 1 ]; then
         local gcc_path=$1
         if [ -x $gcc_path ]; then
-            if [ "$os_name" = "CentOS" ]; then
-                result=$(bash -c "$gcc_path --version" | head -n1 | sed -r 's/.*([0-9]\.[0-9]\.[0-9]).*/\1/')
-            else
-                result=$(bash -c "$gcc_path --version" | head -n1 | sed -r 's/\(.*\)//' | sed -r 's/ +/ /g' | cut -d' ' -f2)
-            fi
+#             if [ "$os_name" = "CentOS" ]; then
+#                 result=$(bash -c "$gcc_path --version" | head -n1 | sed -r 's/.*([0-9]\.[0-9]\.[0-9]).*/\1/')
+#             else
+#                 result=$(bash -c "$gcc_path --version" | head -n1 | sed -r 's/\(.*\)//' | sed -r 's/ +/ /g' | cut -d' ' -f2)
+#             fi
+
+            result=$(bash -c "$gcc_path --version" | head -n1 | sed -r 's/\([^\)]*\)//' | sed -r 's/ +/ /g' | cut -d' ' -f2)
         fi
     fi
     echo "$result"
