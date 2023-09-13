@@ -74,11 +74,11 @@ function display_help()
 {
 cat << EOF
 Usage: ${0##*/} [hcqb]
-  -h --help       Display this help and exit
-  -c -config-qbs  Only configuring QBS profiles
-  -q --qt-path    Path to Qt framework
-  -b --branch     Qbs branch for build
-  -j --jobs       Thread count for QBS build
+  -h --help        Display this help and exit
+  -c --config-qbs  Only configuring QBS profiles
+  -q --qt-path     Path to Qt framework
+  -b --branch      Qbs branch for build
+  -j --jobs        Thread count for QBS build
   Current build parameters:
     prefix ................ $prefix
     qt path ............... $qt_path
@@ -97,7 +97,7 @@ EOF
 while test -n ${1:-""}
 do
     case "$1" in
-        -c|-config-qbs)
+        -c|--config-qbs)
             config_qbs=yes
             shift
             ;;
@@ -287,35 +287,39 @@ set -e
 git checkout --track origin/$branch_qbs
 git submodule update --init --recursive
 
+# Исключаем тесты из сборки
+sed -i '/tests/d' qbs.pro # сборка с qmake
+# sed -i '/config-ui/d' src/app/CMakeLists.txt
+
 # Исключаем из сборки графический конфигуратор, нам нужна только консольная часть
-sed -i '/config-ui/d' src/app/CMakeLists.txt
-sed -i -e '/COMPONENTS/s/Gui//' -e '/COMPONENTS/s/Widgets//' CMakeLists.txt
+sed -i '/config-ui/d' src/app/app.pro # сборка с qmake
+# sed -i -e '/COMPONENTS/s/Gui//' -e '/COMPONENTS/s/Widgets//' CMakeLists.txt
 
-# if [ "$os_type" = "FreeBSD" ]; then
-#     $qmake -r \
-#         QMAKE_LFLAGS+=-Wl,-z,origin \
-#         QMAKE_LFLAGS+=-Wl,-rpath,${prefix}/lib \
-#         QMAKE_LIBDIR+=/usr/local/lib \
-#         QBS_INSTALL_PREFIX=${prefix}
-# else
-#     $qmake -r \
-#         QBS_INSTALL_PREFIX=${prefix} \
-#         QMAKE_CXX=$compiler \
-#         QMAKE_LINK=$compiler \
-#         QMAKE_LFLAGS+=$compiler_rpath
-# fi
+if [ "$os_type" = "FreeBSD" ]; then
+    $qmake -r \
+        QMAKE_LFLAGS+=-Wl,-z,origin \
+        QMAKE_LFLAGS+=-Wl,-rpath,${prefix}/lib \
+        QMAKE_LIBDIR+=/usr/local/lib \
+        QBS_INSTALL_PREFIX=${prefix}
+else
+    $qmake -r \
+        QBS_INSTALL_PREFIX=${prefix} \
+        QMAKE_CXX=$compiler \
+        QMAKE_LINK=$compiler \
+        QMAKE_LFLAGS+=$compiler_rpath
+fi
 
-mkdir $src_dir/build
-cd $src_dir/build
-
-cmake \
-  -D CMAKE_BUILD_TYPE=Release \
-  -D CMAKE_INSTALL_PREFIX=${prefix} \
-  -D Qt5_DIR=${qt_path}/lib/cmake/Qt5 \
-  -D CMAKE_INSTALL_RPATH_USE_LINK_PATH=TRUE \
-  -D WITH_TESTS=OFF \
-  -D WITH_UNIT_TESTS=OFF \
-  ..
+# mkdir $src_dir/build
+# cd $src_dir/build
+#
+# cmake \
+#   -D CMAKE_BUILD_TYPE=Release \
+#   -D CMAKE_INSTALL_PREFIX=${prefix} \
+#   -D Qt5_DIR=${qt_path}/lib/cmake/Qt5 \
+#   -D CMAKE_INSTALL_RPATH_USE_LINK_PATH=TRUE \
+#   -D WITH_TESTS=OFF \
+#   -D WITH_UNIT_TESTS=OFF \
+#   ..
 
 $MAKE -j${jobs}
 
@@ -324,7 +328,9 @@ if [ -d qbs/ ]; then
     $SUDO tar -cjf qbs_$(date +%Y.%m.%d_%H.%M.%S).tar.bz2 qbs/
     $SUDO rm -rf qbs/
 fi
-cd $src_dir/build
+
+cd $src_dir # сборка с qmake
+#cd $src_dir/build
 
 $SUDO $MAKE install
 
