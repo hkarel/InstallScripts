@@ -18,7 +18,7 @@ disk_dev=/dev/disk/by-id/$disk_name
 display_help()
 {
 cat << EOF
-Usage: ${0##*/} [-hp] flash_memory_disk_device obrobian_image_file
+Usage: ${0##*/} [-hp] flash_memory_disk_device image_file
   -h  display this help and exit
   -p  print the names of available disk devices (by id)
   See instruction: http://odroid.com/dokuwiki/doku.php?id=en:odroid_flashing_tools#notes
@@ -71,7 +71,7 @@ if [ -z "$disk_name" ]; then
 fi
 
 if [ -z "$img_file" ]; then
-    echo "Error: Odrobian image file isn't defined" >&2
+    echo "Error: Image file isn't defined" >&2
     display_help
     exit 1
 fi
