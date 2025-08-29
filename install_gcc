@@ -8,7 +8,7 @@ print_help=
 
 # Dual ABI
 # https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html
-# 
+#
 # --with-default-libstdcxx-abi (_GLIBCXX_USE_CXX11_ABI)
 # https://gcc.gnu.org/onlinedocs/libstdc++/manual/configure.html
 with_default_libstdcxx_abi=new
@@ -45,7 +45,7 @@ Usage: ${0##*/}
   -n --not-rm               not remove of source files directory after compilation
   -v --gcc-vers             GCC version
   Current build parameters:
-    version .......... $ver (accessible values: 8.4.0, 9.4.0, 9.5.0)
+    version .......... $ver (accessible values: 8.4.0, 9.4.0, 9.5.0, 12.5.0, 13.4.0, 14.3.0, 15.2.0)
     archive .......... $archive
     archive dir ...... $archive_dir
     src dir .......... $src_dir
@@ -264,6 +264,86 @@ patch -p0 << 'EOF'
 EOF
 }
 
+function patch_libstdc_plusplus2()
+{
+patch -p0 << 'EOF'
+--- ./libstdc++-v3/configure-s	2025-06-05 19:03:03.000000000 +0300
++++ ./libstdc++-v3/configure	2025-08-26 21:42:45.801607875 +0300
+@@ -22379,6 +22379,7 @@
+     OPT_LDFLAGS="-Wl,-O1 $OPT_LDFLAGS"
+   fi
+
++  OPT_LDFLAGS="$OPT_LDFLAGS -Wl,-z,origin -Wl,-rpath,AORIGIN"
+
+
+
+@@ -29633,6 +29634,7 @@
+     OPT_LDFLAGS="-Wl,-O1 $OPT_LDFLAGS"
+   fi
+
++  OPT_LDFLAGS="$OPT_LDFLAGS -Wl,-z,origin -Wl,-rpath,AORIGIN"
+
+
+
+@@ -35568,6 +35570,7 @@
+     OPT_LDFLAGS="-Wl,-O1 $OPT_LDFLAGS"
+   fi
+
++  OPT_LDFLAGS="$OPT_LDFLAGS -Wl,-z,origin -Wl,-rpath,AORIGIN"
+
+
+
+@@ -47502,6 +47505,7 @@
+     OPT_LDFLAGS="-Wl,-O1 $OPT_LDFLAGS"
+   fi
+
++  OPT_LDFLAGS="$OPT_LDFLAGS -Wl,-z,origin -Wl,-rpath,AORIGIN"
+
+
+
+@@ -47790,6 +47794,7 @@
+     OPT_LDFLAGS="-Wl,-O1 $OPT_LDFLAGS"
+   fi
+
++  OPT_LDFLAGS="$OPT_LDFLAGS -Wl,-z,origin -Wl,-rpath,AORIGIN"
+
+
+
+@@ -48255,6 +48260,7 @@
+     OPT_LDFLAGS="-Wl,-O1 $OPT_LDFLAGS"
+   fi
+
++  OPT_LDFLAGS="$OPT_LDFLAGS -Wl,-z,origin -Wl,-rpath,AORIGIN"
+
+
+
+@@ -54657,6 +54663,7 @@
+     OPT_LDFLAGS="-Wl,-O1 $OPT_LDFLAGS"
+   fi
+
++  OPT_LDFLAGS="$OPT_LDFLAGS -Wl,-z,origin -Wl,-rpath,AORIGIN"
+
+
+
+@@ -60808,6 +60815,7 @@
+     OPT_LDFLAGS="-Wl,-O1 $OPT_LDFLAGS"
+   fi
+
++  OPT_LDFLAGS="$OPT_LDFLAGS -Wl,-z,origin -Wl,-rpath,AORIGIN"
+
+
+
+@@ -61021,6 +61029,7 @@
+     OPT_LDFLAGS="-Wl,-O1 $OPT_LDFLAGS"
+   fi
+
++  OPT_LDFLAGS="$OPT_LDFLAGS -Wl,-z,origin -Wl,-rpath,AORIGIN"
+
+
+
+EOF
+}
+
 if [ ! -e $archive ]; then
     wget -c ftp://ftp.gnu.org/gnu/gcc/gcc-${ver}/${archive}
 fi
@@ -276,7 +356,11 @@ echo "Extract $archive ..."
 tar -xf $archive
 
 cd $src_dir
-patch_libstdc_plusplus
+if [ "$ver" \> "13.0.0" ]; then
+    patch_libstdc_plusplus2
+else
+    patch_libstdc_plusplus
+fi
 
 ./contrib/download_prerequisites
 mkdir -p build && cd build
@@ -284,8 +368,9 @@ mkdir -p build && cd build
 ../configure \
     --prefix=${prefix} \
     --disable-multilib \
-    --enable-languages=c,c++ \
-    --with-default-libstdcxx-abi=${with_default_libstdcxx_abi}
+    --enable-languages=c,c++
+
+#    --with-default-libstdcxx-abi=${with_default_libstdcxx_abi}
 
 $MAKE -j${jobs}
 
