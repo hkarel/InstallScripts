@@ -15,6 +15,14 @@ function strip_debug_info()
         if [ -n "$res" ]; then
             echo "Stripped: $1"
             $SUDO strip --strip-all $1
+            return
+        fi
+
+        res=$(file $1 | grep -E 'LSB +pie +executable')
+        if [ -n "$res" ]; then
+            echo "Stripped: $1"
+            $SUDO strip --strip-all $1
+            return
         fi
     fi
 }
